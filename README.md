@@ -33,7 +33,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 HapHiC has been tested and validated on servers running Linux, equipped with either Intel Xeon or AMD EPYC CPUs.
 
-```Bash
+```bash
 # (1) Download HapHiC from GitHub
 $ git clone https://github.com/zengxiaofei/HapHiC.git
 
@@ -55,7 +55,7 @@ $ /path/to/HapHiC/haphic -h
 
 First, you need to prepare a BAM file by aligning Hi-C data to the assembly. Here is an example: 
 
-```Bash
+```bash
 # (1) Align Hi-C data to the assembly, remove PCR duplicates and filter out secondary and supplementary alignments
 $ bwa index asm.fa
 $ bwa mem -5SP asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblaster | samtools view - -@ 14 -S -h -b -F 3340 -o HiC.bam
@@ -70,13 +70,13 @@ You can prepare the BAM file according to your own preferences or requirements, 
 
 **(i) One-line command**. HapHiC provides a one-line command `haphic pipeline` to execute the entire scaffolding pipeline. The required parameters are 1) `asm.fa`, your genome assembly file in FASTA format; 2) `HiC.filtered.bam`, the BAM file prepared in the previous step; 3) `nchrs`, the expected number of chromosomes.
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs
 ```
 
 **(ii) Restriction site.** The default restriction site is `GATC`  (MboI/DpnII). You can modify this  using the `--RE` parameter. If you are unsure or if your Hi-C library was constructed without restriction enzymes (REs), it is acceptable to leave it as the default.
 
-```Bash
+```bash
 # For HindIII
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "AAGCTT"
 # For Arima two-enzyme chemistry
@@ -87,21 +87,21 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "GATC,GANTC
 
 **(iii) Contig correction.** To correct input contigs based on Hi-C linking information, use `--correct_nrounds` to enable assembly correction and set the number of correction rounds. For example:
 
-```Bash
+```bash
 # Typically, two rounds of assembly correction are enough
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --correct_nrounds 2
 ```
 
 **(iv) Switch error.** If your input assembly is haplotype-resolved and has a high switch error rate (often introduced by assemblers when the sequence divergence between haplotypes is very low), use `--remove_allelic_links` to remove Hi-C links between allelic contigs. The value should be the ploidy of the assembly. For example:
 
-```Bash
+```bash
 # For haplotype-resolved assembles of autotetraploids, set the parameter to 4
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --remove_allelic_links 4
 ```
 
 **(v) Performance.** Use `--threads` to set the number of threads for BAM file reading, and `--processes` to create multiple processes for contig ordering and orientation. For example:
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --threads 8 --processes 8
 ```
 
@@ -125,7 +125,7 @@ For more information, run `haphic pipeline --help`.
 
 Before clustering, HapHiC performs preprocessing to correct assembly misjoins, filter out short, mis-assembled contigs, and remove allelic Hi-C links. After that, a Markov cluster algorithm (MCL algorithm) is used to cluster the contigs into groups. Unlike agglomerative hierarchical clustering (AHC, used in LACHESIS and ALLHiC), which specifies the number of clusters, the MCL Algorithm implicitly controls it with a parameter called "inflation". The higher the inflation, the more the groups are clustered. The main problem with AHC is that even though the number of clusters is specified, contigs from different chromosomes may also be clustered into the same group. This is common in phased diploid or polyploid genome assemblies. To solve this, HapHiC tries a series of inflations to cluster the contigs (controlled by `min_inflation` and `max_inflation`) and recommends a "best" one based on both the expected number of chromosomes `nchrs` provided and the length distribution of the groups.
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic cluster asm.fa HiC.filtered.bam nchrs
 ```
 
@@ -165,7 +165,7 @@ In some cases, HapHiC cannot get the "best" one. It could be due to inappropriat
 
 In the previous step, some contigs may have been filtered out before clustering or assigned to incorrect groups. Additionally, the number of final clusters output by Markov clustering may exceed the specified number of chromosomes ( `nchrs` ). To address these issues, we added a reassignment step to rescue contigs that are not in any groups, reassign contigs to the correct groups, and perform an additional agglomerative hierarchical clustering to concatenate groups if necessary. The input files `full_links.pkl` , `mcl_inflation_x.clusters.txt ` , and `paired_links.clm` are outputs from the clustering step, where `x` represents the "best" inflation value:
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic reassign asm.fa full_links.pkl mcl_inflation_x.clusters.txt paired_links.clm --nclusters nchrs
 ```
 
@@ -183,7 +183,7 @@ For more information, run `haphic reassign --help`.
 
 The ordering and orientation step in HapHiC is implemented using an integration of algorithms from [3D-DNA](https://github.com/aidenlab/3d-dna) and [ALLHiC](https://github.com/tanghaibao/allhic). First, an efficiency-improved 3D-DNA iterative scaffolding algorithm (refered to as "fast sorting") is used to quickly order and orient the contigs. Then, the ordering and orientation of contigs are input as an initial configuration and optimized with the ALLHiC program ([a modified version](http://github.com/zengxiaofei/allhic), in which the hot-start optimization has been fixed). The input file `HT_links.pkl` is the output file from the clustering step; the directory `split_clms` and the group files `final_groups/group*.txt` were created in the reassignment step. The optional parameter `--processes` is used to set the number of processes for the ordering and orientation.
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic sort asm.fa HT_links.pkl split_clms final_groups/group*.txt --processes 8
 ```
 
@@ -200,7 +200,7 @@ For more information, run `haphic sort --help`.
 
 The final step is to build the final scaffolds (pseudomolecules) using the chromosome assignment, ordering and orientation information of contigs from the `group*.tour` files. By default, the output scaffolds are sorted by length.
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic build asm.fa group*.tour
 ```
 
@@ -261,7 +261,7 @@ $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --quick_view
 
 First, install the dependencies, including 1) [3D-DNA](https://github.com/aidenlab/3d-dna), (2) [matlock](https://github.com/phasegenomics/matlock), (3) [Juicebox scripts](https://github.com/phasegenomics/juicebox_scripts). Then, generate the `.assembly` and `.hic` files by following these steps:
 
-```Bash
+```bash
 # (1) Generate .mnd file
 $ /path/to/matlock bam2 juicer HiC.filtered.bam out.links.mnd
 $ sort -k2,2 -k6,6 out.links.mnd > out.sorted.links.mnd
@@ -275,7 +275,7 @@ $ bash /path/to/3d-dna/visualize/run-assembly-visualizer.sh -p false scaffolds.a
 
 You can recall these steps on the command line:
 
-```Bash
+```bash
 $ /path/to/HapHiC/haphic juicer
 ```
 

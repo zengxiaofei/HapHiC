@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Author: Xiaofei Zeng
+# Email: xiaofei_zeng@whu.edu.cn
+# Created Time: 2022-09-13 22:47
+
+
+"""This code is only a wrapper for HapHiC scripts"""
+
+
+import os
+import sys
+import subprocess
+from scripts._version import __version__, __update_time__
+
+
+TITLE_DOC = """
+          \033[42;37m         ______  __              ______  _______________        \033[0m
+          \033[42;37m         ___  / / /_____ ___________  / / /__(_)_  ____/        \033[0m
+          \033[42;37m         __  /_/ /_  __ `/__  __ \_  /_/ /__  /_  /             \033[0m
+          \033[42;37m         _  __  / / /_/ /__  /_/ /  __  / _  / / /___           \033[0m
+          \033[42;37m         /_/ /_/  \__,_/ _  .___//_/ /_/  /_/  \____/           \033[0m
+          \033[42;37m                         /_/                                    \033[0m
+          \033[42;37m             HapHiC: A fast, reference-independent,             \033[0m
+          \033[42;37m        allele-aware scaffolding tool based on Hi-C data        \033[0m
+          \033[47;32m               Author  :  Xiaofei Zeng                          \033[0m
+          \033[47;32m               Email   :  zengxf@sustech.edu.cn                 \033[0m
+          \033[47;32m                          xiaofei_zeng@whu.edu.cn               \033[0m
+          \033[47;32m               Version :  {}                                 \033[0m
+          \033[47;32m               Update  :  {}                            \033[0m
+""".format(__version__, __update_time__)
+
+HELP_DOC = """
+  Usage: haphic [command] <parameters>
+
+  Command    Description
+  --------   ----------------------------------------------------------------------
+  pipeline   Execute an automated pipeline consisting of "cluster", "reassign",
+             "sort", and "build". For better result through parameter tuning
+             or to parallelize the "sort" step on a computer cluster, you may
+             run the commands below individually:
+
+  cluster    [Step1] Execute preprocessing and Markov clustering for contigs.
+  reassign   [Step2] Reassign and rescue contigs. Perform additional agglomerative
+                     hierarchical clustering if necessary.
+  sort       [Step3] Order and orient contigs within each group.
+  build      [Step4] Build final scaffolds (pseudomolecules).
+
+  allhic     Call a modified version of ALLHiC, in which the hot-start optimization
+             has been fixed (source code: https://github.com/zengxiaofei/allhic).
+  juicer     Show the guide to generate files for Juicebox visualization.
+
+  Use haphic [command] --help/-h to see detailed help for each individual command.
+
+  Visit the GitHub repository for more information:
+  https://github.com/zengxiaofei/HapHiC
+  """
+
+JUICE_DOC = """
+  [Step 0] Install 3D-DNA, matlock, and Juicebox scripts
+     (1) 3D-DNA: https://github.com/aidenlab/3d-dna
+     (2) matlock: https://github.com/phasegenomics/matlock
+     (3) Juicebox scripts: https://github.com/phasegenomics/juicebox_scripts
+
+  [Step 1] Generate .mnd files
+      $ /path/to/matlock bam2 juicer <filtered_bam> out.links.mnd
+      $ sort -k2,2 -k6,6 out.links.mnd > out.sorted.links.mnd
+
+  [Step 2] Generate .assembly file
+      $ /path/to/juicebox_scripts/agp2assembly.py scaffolds.agp scaffolds.assembly
+
+  [Step 3] Generate .hic file
+      $ bash /path/to/3d-dna/visualize/run-assembly-visualizer.sh -p false scaffolds.assembly out.sorted.links.mnd
+  """
+
+# a dict mapping commands to corresponding programs
+param_dict = {
+        'cluster': 'HapHiC_cluster.py',
+        'reassign': 'HapHiC_reassign.py',
+        'sort': 'HapHiC_sort.py',
+        'build': 'HapHiC_build.py',
+        'pipeline': 'HapHiC_pipeline.py',
+        'allhic': 'allhic'}
+
+# commands
+if len(sys.argv) > 1 and sys.argv[1] in param_dict:
+
+    script_realpath = os.path.dirname(os.path.realpath(__file__))
+    sub_program = os.path.join(script_realpath, 'scripts', param_dict[sys.argv[1]])
+
+    commands = [sub_program] + sys.argv[2:]
+
+    subprocess.run(commands, check=True)
+
+# print help message
+elif len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}):
+
+    print(TITLE_DOC)
+    print(HELP_DOC)
+
+elif sys.argv[1] in {'-v', '--version'}:
+    print('HapHiC', __version__)
+
+# for downstream analysis
+elif sys.argv[1].lower() in {'juice', 'juicer', 'juicebox'}:
+
+    print(JUICE_DOC)
+
+# exceptions
+else:
+
+    print(TITLE_DOC)
+    print(HELP_DOC)
+
+    raise Exception('Bad command or parameters! Please check the help message above.')
+

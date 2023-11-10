@@ -20,7 +20,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
   * [[Step 1] Clustering](#step1)
   * [[Step 2] Reassignment](#step2)
   * [[Step 3] ordering and orientation](#step3)
-  * [[Step4] Building pseudomolecules](#step4)
+  * [[Step 4] Building pseudomolecules](#step4)
 - [Work with hifiasm (experimental)](#hifiasm)
 - [Quick view mode](#quick_view)
 - [Generate .assembly and .hic files for JuiceBox visualization](#juicebox)
@@ -196,7 +196,7 @@ For more information, run `haphic sort --help`.
 * `group*.tour.sav` : the fast sorting result of contigs within each group
 * `group*.tour` : the final contig ordering and orientation result for each group
 
-### <span id="step4">[Step4] Building pseudomolecules</span>
+### <span id="step4">[Step 4] Building pseudomolecules</span>
 
 The final step is to build the final scaffolds (pseudomolecules) using the chromosome assignment, ordering and orientation information of contigs from the `group*.tour` files. By default, the output scaffolds are sorted by length.
 

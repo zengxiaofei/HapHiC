@@ -6,9 +6,18 @@
 
 HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplotype-resolved genome assemblies into chromosome-scale pseudomolecules. Unlike [ALLHiC](https://github.com/tangerzhang/ALLHiC), another allele-aware scaffolder, HapHiC can achieve this without the need for reference genomes. Our evaluations indicate that HapHiC outperforms other Hi-C scaffolding tools with higher tolerance to low contig N50, low Hi-C sequencing depth, and various types of assembly errors. Additionally, HapHiC is super-fast and also suitable for haplotype-collapsed diploid and allopolyploid genome assemblies.
 
+**Features:**
+
+- [x] Chromosome-level scaffolding of haplotype-phased assemblies without reference genomes
+- [x] Efficient correction of chimeric contigs (misjoins) with little impact on contig N50
+- [x] Much higher tolerance to chimeric contigs, collapsed contigs, and switch errors
+- [x] Improved performance in chromosome assignment of contigs
+- [x] Improved performance in ordering and orienation of contigs
+- [x] Super-fast and memory-efficient
+- [x] Able to order and orient contigs without prior knowledge of the number of chromosomes
+- [x] Able to utilize phasing information from hifiasm with varying confidence levels 
+
 **Terminology:** To ensure concision and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
-
-
 
 ## Table of contents
 

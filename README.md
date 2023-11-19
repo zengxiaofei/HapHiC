@@ -315,7 +315,7 @@ $ /path/to/HapHiC/haphic juicer
 
 ## <span id="citing">Citing HapHiC</span>
 
-If you use HapHiC in your work, please cite out preprint on bioRxiv:
+If you use HapHiC in your work, please cite our preprint on bioRxiv:
 
 > Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. (2023) Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *bioRxiv*, 2023.11.18.567668. doi: [https://doi.org/10.1101/2023.11.18.567668](https://doi.org/10.1101/2023.11.18.567668)
 

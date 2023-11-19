@@ -35,7 +35,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 - [Generate .assembly and .hic files for JuiceBox visualization](#juicebox)
 - [Frequently asked questions (FAQs)](#faqs)
 - [Problems and bug reports](#problems)
-
+- [Citing HapHiC](#citing)
 
 
 ## <span id="installation">Installation</span>
@@ -311,3 +311,14 @@ $ /path/to/HapHiC/haphic juicer
 ## <span id="problems">Problems and bug reports</span>
 
 * **Issues:** https://github.com/zengxiaofei/HapHiC/issues
+
+
+## <span id="citing">Citing HapHiC</span>
+
+If you use HapHiC in your work, please cite out preprint on bioRxiv:
+
+> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. (2023) Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *bioRxiv*, 2023.11.18.567668. doi: [https://doi.org/10.1101/2023.11.18.567668](https://doi.org/10.1101/2023.11.18.567668)
+
+If you use the optimization function for contig ordering and orientation (by default), please also cite ALLHiC:
+
+> Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845. doi: doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)

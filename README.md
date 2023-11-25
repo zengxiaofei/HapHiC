@@ -36,7 +36,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 - [Frequently asked questions (FAQs)](#faqs)
 - [Problems and bug reports](#problems)
 - [Citing HapHiC](#citing)
-
+- [Reproducibility](#reproduce)
 
 ## <span id="installation">Installation</span>
 
@@ -322,3 +322,8 @@ If you use HapHiC in your work, please cite our preprint on bioRxiv:
 If you use the optimization function for contig ordering and orientation (by default), please also cite ALLHiC:
 
 > Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845. doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)
+
+
+## <span id="reproduce">Reproducibility</span>
+
+To reproduce the results in our paper, please use the HapHiC code in commit [431b7b6](https://github.com/zengxiaofei/HapHiC/tree/431b7b6f3e0471c960985ecdbbab4d18b452a22f).

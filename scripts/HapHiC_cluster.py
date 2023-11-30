@@ -82,7 +82,7 @@ def count_RE_sites(seq, RE):
     return RE_sites
 
 
-def parse_fasta(fasta, check=False, RE='GATC', keep_letter_case=False, logger=logger):
+def parse_fasta(fasta, RE='GATC', keep_letter_case=False, logger=logger):
 
     """save sequences, lengths, and RE site counts of contigs into a dict"""
     logger.info('Parsing input FASTA file...')

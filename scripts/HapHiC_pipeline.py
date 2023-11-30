@@ -455,6 +455,7 @@ def main():
 
     # modify args to make them compatible across scripts
     args.fasta = abspath(args.fasta)
+    args.raw_fasta = args.fasta
     args.bam = abspath(args.bam)
     if args.gfa:
         args.gfa = ','.join([abspath(gfa) for gfa in args.gfa.split(',')])

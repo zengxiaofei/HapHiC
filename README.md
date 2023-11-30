@@ -227,15 +227,21 @@ For more information, run `haphic sort --help` .
 
 The final step is to build the scaffolds (pseudomolecules) using the chromosome assignment, ordering and orientation information of contigs from the `group*.tour` files. By default, the output scaffolds are sorted by scaffold length.
 
+**If assembly correction was not performed**:
+
 ```bash
-$ /path/to/HapHiC/haphic build asm.fa HiC.filtered.bam group*.tour
+$ /path/to/HapHiC/haphic build asm.fa asm.fa HiC.filtered.bam group*.tour
 ```
 
-**Notes:**  
+**If assembly correction has been performed**, use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa` . Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
 
-* If assembly correction has been performed, use `corrected_asm.fa` as input FASTA file instead of `asm.fa`.
-* Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
-* `HiC.filtered.bam` is required since HapHiC version 1.0.1 for generating the script for juicebox visualization and curation.
+```bash
+$ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam group*.tour --corrected_ctgs corrected_ctgs.txt
+```
+
+**Note:**  
+
+* The second `asm.fa` (raw uncorrected assembly) and `HiC.filtered.bam` are required since HapHiC version 1.0.1 for generating the script for juicebox visualization and curation.
 
 **Parameters**
 

@@ -177,7 +177,7 @@ def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, corrected_ctg_set, ar
 
 def generate_juicebox_script(args):
 
-    fasta_basename = os.path.basename(args.fasta)
+    raw_fasta_basename = os.path.basename(args.raw_fasta)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     utils_dir = os.path.join(script_dir, '../utils')
     juicer = os.path.join(utils_dir, 'juicer')
@@ -185,13 +185,13 @@ def generate_juicebox_script(args):
 
     with open('juicebox.sh', 'w') as f:
         f.write('#!/bin/bash\n\n')
-        if not os.path.exists(fasta_basename):
-            f.write('ln -s {} .\n'.format(args.fasta))
-        f.write('samtools faidx {}\n'.format(fasta_basename))
+        if not os.path.exists(raw_fasta_basename):
+            f.write('ln -s {} .\n'.format(args.raw_fasta))
+        f.write('samtools faidx {}\n'.format(raw_fasta_basename))
         # For many haplotype-resolved assemblies, the default MAPQ filtering (-q 10) is too strict.
         # Additionally, the juicer pre in YaHS has some problems in filtering unsorted bam (although this should be possible)
         f.write('{} pre -a -q 1 -o out_JBAT {} {}.raw.agp {}.fai >out_JBAT.log 2>&1\n'.format(
-            juicer, args.bam, args.prefix, fasta_basename))
+            juicer, args.bam, args.prefix, raw_fasta_basename))
         f.write('(java -jar -Xmx32G {} pre out_JBAT.txt out_JBAT.hic.part <(cat out_JBAT.log | grep PRE_C_SIZE '.format(juicer_tools))
         f.write("| awk '{print $2\" \"$3}')) && (mv out_JBAT.hic.part out_JBAT.hic)\n")
 
@@ -202,13 +202,17 @@ def parse_arguments():
     parser.add_argument(
             'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     parser.add_argument(
+            'raw_fasta', default=None,
+            help='raw (uncorrected) draft genome in FASTA format, used for generating the script for juicebox visualization and curation. '
+            'When `--correct_nrounds` was not set, this parameter should be the same as the parameter `fasta`')
+    parser.add_argument(
             'bam', help='filtered Hi-C read mapping result in BAM format, used for generating the script for juicebox visualization and curation')
     parser.add_argument(
             'tours', nargs='+', help='`*.tour` files generated in the sorting (ordering and orientation) step')
     parser.add_argument(
             '--corrected_ctgs', default=None, 
             help='`corrected_ctgs.txt` generated in the clustering step when `--correct_nrounds` was set, default: %(default)s. '
-            'This parameter is necessary for generating a YaHS-style `scaffolds.raw.agp`')
+            'This parameter is necessary for generating a YaHS-style `scaffolds.raw.agp`. Otherwise, the file generated may be incorrect')
     parser.add_argument(
             '--Ns', type=int, default=100,
             help='number of Ns representing gaps, default: %(default)s')
@@ -246,7 +250,13 @@ def run(args, log_file=None):
 
     # a simple parameter check
     if os.path.basename(args.fasta) == 'corrected_asm.fa' and not args.corrected_ctgs:
-        logger.warning('[Warning] The input FASTA file was "corrected_asm.fa". Did you forget to include the parameter `--corrected_ctgs`???')
+        logger.warning('[Warning] The input FASTA file is "corrected_asm.fa". Did you forget to include the parameter `--corrected_ctgs`???')
+    if args.fasta != args.raw_fasta and not args.corrected_ctgs:
+        logger.error('`fasta` and `raw_fasta` are different, but the parameter `--corrected_ctgs` was not set')
+        raise RuntimeError('`fasta` and `raw_fasta` are different, but the parameter `--corrected_ctgs` was not set')
+    if args.fasta == args.raw_fasta and args.corrected_ctgs:
+        logger.error('The parameter `--corrected_ctgs` was set, but `fasta` and `raw_fasta` are the same')
+        raise RuntimeError('The parameter `--corrected_ctgs` was set, but `fasta` and `raw_fasta` are the same')
 
     # Using default RE here is ok. Because in the building step,
     # we don't care about the restriction sites.

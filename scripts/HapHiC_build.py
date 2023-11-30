@@ -57,7 +57,21 @@ def parse_tours(tour_files, fa_dict):
     return tour_dict, output_ctgs
 
 
-def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, args):
+def parse_corrected_ctgs(corrected_ctgs):
+
+    corrected_ctg_set = set()
+
+    if corrected_ctgs:
+        with open(corrected_ctgs) as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                corrected_ctg_set.add(line.rstrip())
+
+    return corrected_ctg_set
+
+
+def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, corrected_ctg_set, args):
 
     def get_output_seq(group):
 
@@ -72,7 +86,7 @@ def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, args):
         return output_seq
 
 
-    def write_agp(group, agp_out):
+    def write_agp(group, agp_out, raw_agp_out):
 
         n = 0
         accumulated_len = 0
@@ -82,14 +96,29 @@ def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, args):
             start = accumulated_len + 1
             end = accumulated_len + ctg_len
             accumulated_len += ctg_len
+            # for agp output with newly broken contigs
             agp_out.write('{}\t{}\t{}\t{}\tW\t{}\t1\t{}\t{}\n'.format(
                 group, start, end, n, ctg, ctg_len, ori))
+            # for raw agp output (the YaHS style)
+            if ctg in corrected_ctg_set:
+                assert ':' in ctg
+                raw_ctg, pos_range = ctg.rsplit(':', 1)
+                s, e = pos_range.split('-')
+                raw_agp_out.write('{}\t{}\t{}\t{}\tW\t{}\t{}\t{}\t{}\n'.format(
+                    group, start, end, n, raw_ctg, s, e, ori))
+            else:
+                raw_agp_out.write('{}\t{}\t{}\t{}\tW\t{}\t1\t{}\t{}\n'.format(
+                    group, start, end, n, ctg, ctg_len, ori))
             if n < len(tour_dict[group]*2)-1:
                 n += 1
                 start = accumulated_len + 1
                 end = accumulated_len + args.Ns
                 accumulated_len += args.Ns
-                agp_out.write('{}\t{}\t{}\t{}\tU\t{}\tcontig\tyes\tmap\n'.format(
+                # for agp output with newly broken contigs
+                agp_out.write('{}\t{}\t{}\t{}\tU\t{}\tscaffold\tyes\tproximity_ligation\n'.format(
+                    group, start, end, n, args.Ns))
+                # for raw agp output (the YaHS style)
+                raw_agp_out.write('{}\t{}\t{}\t{}\tU\t{}\tscaffold\tyes\tproximity_ligation\n'.format(
                     group, start, end, n, args.Ns))
 
     logger.info('Building final scaffolds...')
@@ -121,37 +150,72 @@ def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, args):
     unanchored_ctg_list.sort(key=lambda x: x[1], reverse=True)
 
     # output FASTA file & AGP file
-    with open('{}.fa'.format(args.prefix), 'w') as fa_out, open('{}.agp'.format(args.prefix), 'w') as agp_out:
+    with open('{}.fa'.format(args.prefix), 'w') as fa_out, open('{}.agp'.format(args.prefix), 'w') as agp_out, open('{}.raw.agp'.format(args.prefix), 'w') as raw_agp_out:
         # the contigs in tour files
         for group in order_list:
             # output FASTA file
             output_seq = get_output_seq(group)
             fa_out.write('>{}\n{}\n'.format(group, output_seq))
             # output AGP file
-            write_agp(group, agp_out)
+            write_agp(group, agp_out, raw_agp_out)
         # contigs that are not in tour files
         for ctg, ctg_len in unanchored_ctg_list:
             # output FASTA file
             fa_out.write('>{}\n{}\n'.format(ctg, fa_dict[ctg][0]))
             # output AGP file
-            agp_out.write('{0}\t1\t{1}\t1\tW\t{0}\t1\t{1}\t+\n'.format(
-                ctg, ctg_len))
+            # for agp output with newly broken contigs
+            agp_out.write('{0}\t1\t{1}\t1\tW\t{0}\t1\t{1}\t+\n'.format(ctg, ctg_len))
+            # for raw agp output (the YaHS style)
+            if ctg in corrected_ctg_set:
+                assert ':' in ctg
+                raw_ctg, pos_range = ctg.rsplit(':', 1)
+                start, end = pos_range.split('-')
+                raw_agp_out.write('{0}\t1\t{2}\t1\tW\t{1}\t{3}\t{4}\t+\n'.format(ctg, raw_ctg, ctg_len, start, end))
+            else:
+                raw_agp_out.write('{0}\t1\t{1}\t1\tW\t{0}\t1\t{1}\t+\n'.format(ctg, ctg_len))
+
+
+def generate_juicebox_script(args):
+
+    fasta_basename = os.path.basename(args.fasta)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    utils_dir = os.path.join(script_dir, '../utils')
+    juicer = os.path.join(utils_dir, 'juicer')
+    juicer_tools = os.path.join(utils_dir, 'juicer_tools.1.9.9_jcuda.0.8.jar')
+
+    with open('juicebox.sh', 'w') as f:
+        f.write('#!/bin/bash\n\n')
+        if not os.path.exists(fasta_basename):
+            f.write('ln -s {} .\n'.format(args.fasta))
+        f.write('samtools faidx {}\n'.format(fasta_basename))
+        # For many haplotype-resolved assemblies, the default MAPQ filtering (-q 10) is too strict.
+        # Additionally, the juicer pre in YaHS has some problems in filtering unsorted bam (although this should be possible)
+        f.write('{} pre -a -q 1 -o out_JBAT {} {}.raw.agp {}.fai >out_JBAT.log 2>&1\n'.format(
+            juicer, args.bam, args.prefix, fasta_basename))
+        f.write('(java -jar -Xmx32G {} pre out_JBAT.txt out_JBAT.hic.part <(cat out_JBAT.log | grep PRE_C_SIZE '.format(juicer_tools))
+        f.write("| awk '{print $2\" \"$3}')) && (mv out_JBAT.hic.part out_JBAT.hic)\n")
 
 
 def parse_arguments():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-            'fasta', help='draft genome in FASTA format')
+            'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
+    parser.add_argument(
+            'bam', help='filtered Hi-C read mapping result in BAM format, used for generating the script for juicebox visualization and curation')
     parser.add_argument(
             'tours', nargs='+', help='`*.tour` files generated in the sorting (ordering and orientation) step')
+    parser.add_argument(
+            '--corrected_ctgs', default=None, 
+            help='`corrected_ctgs.txt` generated in the clustering step when `--correct_nrounds` was set, default: %(default)s. '
+            'This parameter is necessary for generating a YaHS-style `scaffolds.raw.agp`')
     parser.add_argument(
             '--Ns', type=int, default=100,
             help='number of Ns representing gaps, default: %(default)s')
     parser.add_argument(
             '--sort_by_input',
             default=False, action='store_true',
-            help='sort output scaffolds by the order of input `*.tour files`, otherwise by group length, default: %(default)s')
+            help='sort output scaffolds by the order of input `*.tour` files, otherwise by scaffold length, default: %(default)s')
     parser.add_argument(
             '--keep_letter_case',
             default=False, action='store_true',
@@ -180,13 +244,21 @@ def run(args, log_file=None):
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
 
+    # a simple parameter check
+    if os.path.basename(args.fasta) == 'corrected_asm.fa' and not args.corrected_ctgs:
+        logger.warning('[Warning] The input FASTA file was "corrected_asm.fa". Did you forget to include the parameter `--corrected_ctgs`???')
+
     # Using default RE here is ok. Because in the building step,
     # we don't care about the restriction sites.
     fa_dict = parse_fasta(args.fasta, keep_letter_case=args.keep_letter_case, logger=logger)
 
     tour_dict, output_ctgs = parse_tours(args.tours, fa_dict)
 
-    build_final_scaffolds(tour_dict, fa_dict, output_ctgs, args)
+    corrected_ctg_set = parse_corrected_ctgs(args.corrected_ctgs)
+
+    build_final_scaffolds(tour_dict, fa_dict, output_ctgs, corrected_ctg_set, args)
+
+    generate_juicebox_script(args)
 
     finish_time = time.time()
     logger.info('Program finished in {}s'.format(finish_time-start_time))

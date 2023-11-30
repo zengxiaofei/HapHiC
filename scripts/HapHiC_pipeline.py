@@ -326,9 +326,11 @@ def haphic_cluster(args):
     # use the corrected assembly instead the original one
     if args.correct_nrounds:
         args.fasta = abspath('corrected_asm.fa')
+        args.corrected_ctgs = abspath('corrected_ctgs.txt')
         if args.quick_view and args.gfa and len(args.gfa.split(',')) >= 2:
             args.gfa = ','.join([pathjoin(pathsplit(gfa)[0], DIR, 'corrected_' + pathsplit(gfa)[1]) for gfa in args.gfa.split(',')])
-
+    else:
+        args.corrected_ctgs = None
     os.chdir('..')
 
     args.links = abspath(pathjoin(DIR, 'full_links.pkl'))

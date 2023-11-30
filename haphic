@@ -25,8 +25,7 @@ TITLE_DOC = """
           \033[42;37m             HapHiC: A fast, reference-independent,             \033[0m
           \033[42;37m        allele-aware scaffolding tool based on Hi-C data        \033[0m
           \033[47;32m               Author  :  Xiaofei Zeng                          \033[0m
-          \033[47;32m               Email   :  zengxf@sustech.edu.cn                 \033[0m
-          \033[47;32m                          xiaofei_zeng@whu.edu.cn               \033[0m
+          \033[47;32m               Email   :  xiaofei_zeng@whu.edu.cn               \033[0m
           \033[47;32m               Version :  {}                                 \033[0m
           \033[47;32m               Update  :  {}                            \033[0m
 """.format(__version__, __update_time__)

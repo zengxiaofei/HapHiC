@@ -573,7 +573,7 @@ def parse_arguments():
     # Parameters for parsing input files and pipeline control
     input_group = parser.add_argument_group('>>> Parameters for parsing input files and pipeline control')
     input_group.add_argument(
-            'fasta', help='draft genome in FASTA format')
+            'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     input_group.add_argument(
             'links', help='`full_links.pkl` generated in the clustering step (much faster) or filtered Hi-C read mapping result in BAM format (DO NOT sort it by coordinate)')
     input_group.add_argument(

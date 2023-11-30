@@ -82,7 +82,7 @@ def count_RE_sites(seq, RE):
     return RE_sites
 
 
-def parse_fasta(fasta, RE='GATC', keep_letter_case=False, logger=logger):
+def parse_fasta(fasta, check=False, RE='GATC', keep_letter_case=False, logger=logger):
 
     """save sequences, lengths, and RE site counts of contigs into a dict"""
     logger.info('Parsing input FASTA file...')
@@ -133,13 +133,13 @@ def parse_gfa(gfa_list, fa_dict, logger=logger):
                         raise RuntimeError('The contig {} in gfa file {} has a different length than the one in the fasta file. '
                                            'Maybe the gfa file(s) does not match the fasta file.'.format(ctg, gfa))
                     read_depth_dict[ctg] = (n, read_depth)
-    
+
     # all contigs in fa_dict should be in read_depth_dict
     for ctg in fa_dict:
         if ctg not in read_depth_dict:
             logger.error('Can not find contig {} in the gfa file(s). Maybe the gfa file(s) does not match the fasta file.'.format(ctg))
             raise RuntimeError('Can not find contig {} in the gfa file(s). Maybe the gfa file(s) does not match the fasta file.'.format(ctg))
-    
+
     # log a warning if gfa_seq_num > fa_seq_num
     gfa_seq_num, fa_seq_num = len(read_depth_dict), len(fa_dict)
     if gfa_seq_num > fa_seq_num:
@@ -960,7 +960,7 @@ def detect_break_points(ctg_cov_dict, fa_dict, args):
 def break_and_update_ctgs(
         ctg_break_point_dict, ctg_link_pos_dict, ctg_cov_dict,
         frag_source_dict, final_break_pos_dict, final_break_frag_dict,
-        fa_dict, read_depth_dict, args, last_round=False):
+        fa_dict, read_depth_dict, unbroken_ctgs, args, last_round=False):
 
     # these dicts should be updated:
     # (1) fa_dict -> updated in all rounds
@@ -978,19 +978,33 @@ def break_and_update_ctgs(
 
     def pos_shift_for_multi_break_points(ctg, coord, pos_shift_list):
 
-        n = len(pos_shift_list)
-        for p in pos_shift_list:
+        if ctg not in unbroken_ctgs:
+            assert ':' in ctg
+            ctg = ctg.rsplit(':', 1)[0]
+
+        for n, p in enumerate(pos_shift_list):
             new_coord = coord - p
             if new_coord >= 0:
-                return '{}_break{}'.format(ctg, n), new_coord
-            n -= 1
+                if n:
+                    end = pos_shift_list[n-1]
+                else:
+                    end = fa_dict[ctg][1]
+                return '{}:{}-{}'.format(ctg, p+1, end), new_coord
 
     def pos_shift_for_single_break_point(ctg, coord, pos_shift_list):
 
-        if coord >= pos_shift_list[0]:
-            return ctg+'_break2', coord-pos_shift_list[0]
+        if ctg in unbroken_ctgs:
+            start = 1
+            end = fa_dict[ctg][1]
         else:
-            return ctg+'_break1', coord
+            assert ':' in ctg
+            ctg, pos_range = ctg.rsplit(':', 1)
+            start, end = pos_range.split('_')
+
+        if coord >= pos_shift_list[0]:
+            return '{}:{}-{}'.format(ctg, start+pos_shift_list[0], end), coord-pos_shift_list[0]
+        else:
+            return '{}:{}-{}'.format(ctg, start, pos_shift_list[0]), coord
 
     logger.info('Breaking contigs and updating data...')
 
@@ -1018,13 +1032,15 @@ def break_and_update_ctgs(
             # a list used to calculate coordinate shift of Hi-C links after breaking contig
             pos_shift_list = [point for point, cv in break_points][::-1] + [0]
 
+            # single breakpoint
             if len(pos_shift_list) == 2:
                 pos_shift = pos_shift_for_single_break_point
+            # multiple breakpoints
             else:
                 pos_shift = pos_shift_for_multi_break_points
 
             npairs = len(ctg_link_pos_dict[ctg])//2
-            # if cov of the breakpoint is zero
+            # if cov of the breakpoint is not zero
             if not any_zero:
                 for n in range(npairs):
                     coord_i, coord_j = ctg_link_pos_dict[ctg][2*n:2*n+2]
@@ -1039,8 +1055,10 @@ def break_and_update_ctgs(
                         # break ctg_link_pos_dict
                         new_frag_i, new_coord_i = pos_shift(ctg, coord_i, pos_shift_list)
                         new_frag_j, new_coord_j = pos_shift(ctg, coord_j, pos_shift_list)
+                        # consider only intra-frag Hi-C links
                         if new_frag_i == new_frag_j:
                             ctg_link_pos_dict[new_frag_i].extend((new_coord_i, new_coord_j))
+            # if cov of the breakpoint is zero
             else:
                 # no need to get spanning_region
                 for n in range(npairs):
@@ -1049,6 +1067,7 @@ def break_and_update_ctgs(
                     # break ctg_link_pos_dict
                     new_frag_i, new_coord_i = pos_shift(ctg, coord_i, pos_shift_list)
                     new_frag_j, new_coord_j = pos_shift(ctg, coord_j, pos_shift_list)
+                    # consider only intra-frag Hi-C links
                     if new_frag_i == new_frag_j:
                         ctg_link_pos_dict[new_frag_i].extend((new_coord_i, new_coord_j))
 
@@ -1061,7 +1080,23 @@ def break_and_update_ctgs(
 
         for n, (point, cov) in enumerate(break_points, 1):
 
-            new_frag = '{}_break{}'.format(ctg, n)
+            # the first breakpoint
+            if n == 1:
+                # start: 1
+                s = 1
+                last_point = point
+            else:
+                # start: last breakpoint + 1
+                s = last_point + 1
+                last_point = point
+
+            if ctg not in unbroken_ctgs:
+                assert ':' in ctg
+                raw_ctg, pos_range = ctg.rsplit(':', 1)
+                shift = int(pos_range.split('-')[0]) - 1
+                new_frag = '{}:{}-{}'.format(raw_ctg, s+shift, point+shift)
+            else:
+                new_frag = '{}:{}-{}'.format(ctg, s, point)
 
             # update frag_source_dict, final_break_frag_dict and final_break_pos_dict
             frag_source_dict[new_frag] = frag_source
@@ -1080,7 +1115,13 @@ def break_and_update_ctgs(
             start = update_fa_dict(ctg, new_frag, start, point)
 
         # the last frag of a contig
-        new_frag = '{}_break{}'.format(ctg, n+1)
+        if ctg not in unbroken_ctgs:
+            assert ':' in ctg
+            raw_ctg, pos_range = ctg.rsplit(':', 1)
+            shift = int(pos_range.split('-')[0]) - 1
+            new_frag = '{}:{}-{}'.format(raw_ctg, shift+last_point+1, shift+fa_dict[ctg][1])
+        else:
+            new_frag = '{}:{}-{}'.format(ctg, last_point+1, fa_dict[ctg][1])
 
         # update frag_source_dict, final_break_frag_dict and final_break_pos_dict
         frag_source_dict[new_frag] = frag_source
@@ -1119,7 +1160,7 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
 
     logger.info('Performing assembly correction...')
 
-    nbroken_ctgs = 0
+    unbroken_ctgs = set(fa_dict.keys())
 
     frag_source_dict = dict()
     final_break_pos_dict = dict()
@@ -1132,7 +1173,8 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
         logger.info('Correction round {}, breakpoints are detected in {} contig(s)'.format(
             nround+1, len(ctg_break_point_dict)))
 
-        nbroken_ctgs += len(ctg_break_point_dict)
+        if nround == 0:
+            nbroken_ctgs = len(ctg_break_point_dict)
 
         # if no breakpoint found, break the iteration
         if not ctg_break_point_dict:
@@ -1155,8 +1197,9 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
         break_and_update_ctgs(
                 ctg_break_point_dict, ctg_link_pos_dict, ctg_cov_dict,
                 frag_source_dict, final_break_pos_dict, final_break_frag_dict,
-                fa_dict, read_depth_dict, args, last_round)
+                fa_dict, read_depth_dict, unbroken_ctgs, args, last_round)
 
+        unbroken_ctgs -= set(ctg_break_point_dict.keys())
         # print(nround)
         # for frag, source in frag_source_dict.items():
         #     print('source:', frag, source)
@@ -1176,11 +1219,18 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
         os.rename(corrected_assembly_file, bak_assembly_file)
 
     if nbroken_ctgs:
-        logger.info('{} corrected contigs were found. Writing corrected assembly to {}...'.format(
-            nbroken_ctgs, corrected_assembly_file))
+        logger.info('{} contigs were broken into {} contigs. Writing corrected assembly to {}...'.format(
+            nbroken_ctgs, len(fa_dict) - len(unbroken_ctgs), corrected_assembly_file))
+        # output corrected assembly in FASTA format
         with open(corrected_assembly_file, 'w') as f:
             for ctg, ctg_info in fa_dict.items():
                 f.write('>{}\n{}\n'.format(ctg, ctg_info[0]))
+        # output a list for corrected contigs
+        with open('corrected_ctgs.txt', 'w') as f:
+            for ctg, ctg_info in fa_dict.items():
+                if ctg not in unbroken_ctgs:
+                    assert ':' in ctg
+                    f.write(ctg + '\n')
         # generate new gfa files for reassignment (for quick view only)
         if args.quick_view and read_depth_dict and len(args.gfa.split(',')) >= 2:
             for n, gfa in enumerate(args.gfa.split(',')):
@@ -1647,7 +1697,7 @@ def run_mcl_clustering(link_matrix, bin_set, frag_len_dict, frag_index_dict, exp
                 # for bins
                 if frag in bin_set:
                     frag_len = frag_len_dict[frag]
-                    # TODO: there is a risk, if input fasta IDs contain '_bin'
+                    # TODO: there may be a risk, if input fasta IDs contain '_bin'?
                     ctg = frag.rsplit('_bin', 1)[0]
                     if n in ctg_clusters[ctg]:
                         ctg_clusters[ctg][n] += frag_len
@@ -2201,7 +2251,7 @@ def run(args, log_file=None):
 
     # read draft genome in FASTA format,
     # construct a dict to store sequence and length of each contig
-    fa_dict = parse_fasta(args.fasta, RE=args.RE)
+    fa_dict = parse_fasta(args.fasta, check=True, RE=args.RE)
 
     # parse gfa file(s) to get the read depth and phasing information
     if args.gfa:

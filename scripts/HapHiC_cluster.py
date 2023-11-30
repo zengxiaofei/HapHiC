@@ -2251,7 +2251,7 @@ def run(args, log_file=None):
 
     # read draft genome in FASTA format,
     # construct a dict to store sequence and length of each contig
-    fa_dict = parse_fasta(args.fasta, check=True, RE=args.RE)
+    fa_dict = parse_fasta(args.fasta, RE=args.RE)
 
     # parse gfa file(s) to get the read depth and phasing information
     if args.gfa:

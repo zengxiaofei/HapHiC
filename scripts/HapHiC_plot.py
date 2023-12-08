@@ -675,6 +675,7 @@ def main():
     if args.bam.endswith('.bam'):
         contact_matrix = parse_bam(
                 args.bam, ctg_dict, contact_matrix, group_to_total_bin_dict, group_list, ctg_set, args.threads)
+        contact_matrix = contact_matrix + np.transpose(contact_matrix)
         output_pickle(contact_matrix, args)
     else:
         assert args.bam.endswith('.pkl')

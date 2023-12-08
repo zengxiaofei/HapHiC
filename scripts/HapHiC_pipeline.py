@@ -35,7 +35,7 @@ pathsplit = os.path.split
 
 def parse_argument():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='haphic pipeline')
 
     # Parameters for parsing input files
     input_group = parser.add_argument_group('>>> Parameters for parsing input files')

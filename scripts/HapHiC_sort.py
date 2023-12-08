@@ -677,7 +677,7 @@ def check_exceptions(result_list):
 
 def parse_arguments():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='haphic sort')
 
     # Parameters for parsing input files and pipeline control
     input_group = parser.add_argument_group('>>> Parameters for parsing input files and pipeline control')

@@ -1996,7 +1996,7 @@ def output_statistics(fa_dict, link_dict, result_clusters_list):
             fig.tight_layout(w_pad=1, h_pad=1)
 
             plt.savefig('inflation_{}/statistics.pdf'.format(inflation))
-            plt.show()
+            # plt.show()
             plt.close()
 
 
@@ -2031,7 +2031,7 @@ def check_param(param, string, suffix, true_suffix=''):
 
 def parse_arguments():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='haphic cluster')
 
     # Parameters for parsing input files and pipeline control
     input_group = parser.add_argument_group('>>> Parameters for parsing input files and pipeline control')

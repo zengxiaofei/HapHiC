@@ -198,7 +198,7 @@ def generate_juicebox_script(args):
 
 def parse_arguments():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='haphic build')
     parser.add_argument(
             'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     parser.add_argument(

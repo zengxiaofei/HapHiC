@@ -568,7 +568,7 @@ def mock_group_file(fa_dicts, total_lens, final_dir):
 
 def parse_arguments():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='haphic reassign')
 
     # Parameters for parsing input files and pipeline control
     input_group = parser.add_argument_group('>>> Parameters for parsing input files and pipeline control')

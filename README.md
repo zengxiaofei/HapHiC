@@ -19,9 +19,12 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
+* Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
 * Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp`  for compatibility with the Juicebox visualization method suggested by YaHS.
 
 **Terminology:** To ensure concision and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
+
+
 
 ## Table of contents
 
@@ -36,11 +39,14 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
   * [[Step 4] Building pseudomolecules](#step4)
 - [Work with hifiasm (experimental)](#hifiasm)
 - [Quick view mode](#quick_view)
-- [Juicebox visualization and curation](#juicebox)
+- [Juicebox curation](#juicebox)
+- [Visualization](#visualization)
 - [Frequently asked questions (FAQs)](#faqs)
 - [Problems and bug reports](#problems)
 - [Citing HapHiC](#citing)
 - [Reproducibility](#reproduce)
+
+
 
 ## <span id="installation">Installation</span>
 
@@ -298,7 +304,7 @@ $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --quick_view
 
 
 
-## <span id="juicebox">Juicebox visualization and curation</span>
+## <span id="juicebox">Juicebox curation</span>
 
 There are two ways of generating `.assembly` and `.hic` files for visualization and manual curation in Juicebox. You can choose one of them according to your preference.
 
@@ -326,6 +332,13 @@ You can recall these steps on the command line:
 $ /path/to/HapHiC/haphic juicer
 ```
 
+After manual curation in Juicebox, you will obtain the modified assembly file `scaffolds.review.assembly` . To generate the final FASTA file for the scaffolds:
+
+```bash
+# Generate the final FASTA file for the scaffolds
+$ /path/to/juicebox_scripts/juicebox_assembly_converter.py -a scaffolds.review.assembly -f asm.fa -s
+```
+
 #### (2) YaHS-style `scaffolds.raw.agp` (recommended)
 
 To avoid the necessity of re-aligning Hi-C data, we have incorporated a YaHS-style `scaffolds.raw.agp` since HapHiC version 1.0.1. In this AGP file, the broken contigs are not assigned new IDs. Instead, their starting and ending coordinates in the raw contigs are displayed in the seventh and eighth columns. By following [the approach provided by YaHS](https://github.com/c-zhou/yahs#manual-curation-with-juicebox-jbat), you can generate the `.assembly` and `.hic` files without the need for re-aligning.
@@ -337,6 +350,54 @@ $ bash juicebox.sh
 ```
 
 **Note:** In the output log file `out_JBAT.log` , you can find the corresponding scale factor, e.g., `[I::main_pre] scale factor: 2` . To ensure proper alignment of Hi-C contact maps with the boundaries of scaffolds and superscaffolds in Juicebox, please set your own scale factor in Juicebox through the menu `Assembly > Set Scale` .
+
+After manual curation in Juicebox, you will obtain the modified assembly file `out_JBAT.review.assembly` . To generate the final FASTA file for the scaffolds:
+
+```bash
+# Generate the final FASTA file for the scaffolds
+$ /path/to/HapHiC/scripts/juicer post -o out_JBAT out_JBAT.review.assembly out_JBAT.liftover.agp asm.fa
+```
+
+
+
+## <span id="visualization">Visualization</span>
+
+![](./images/HapHiC2.png)
+
+Since HapHiC version 1.0.2, we have introduced a `haphic plot` command to generate highly customizable Hi-C contact maps. This command requires two input files: a filtered BAM file `HiC.filtered.bam` and a scaffold AGP file containing contig IDs that match those in the BAM file:
+
+```bash
+# For HapHiC scaffolding result
+$ /path/to/HapHiC/haphic plot scaffolds.raw.agp HiC.filtered.bam
+# For the AGP file generated after manual curation in Juicebox
+$ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam
+```
+
+The visualized Hi-C contact map is output as `contact_map.pdf` . This process may be somewhat slow if the BAM file is large, taking several minutes per 10 GiB of the BAM file. Upon completion, the program will produce a binary file named `contact_matrix.pkl` . This file can be utilized in place of `HiC.filtered.bam` for faster visualization (~1 minute).
+
+```bash
+# Use previously generated `contact_matrix.pkl` for faster visualization
+$ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp contact_matrix.pkl
+```
+
+**Note:** The input AGP file and the parameters `--bin_size` and `--min_len` must remain consistent throughout.
+
+By default, the bin size is set to 500 Kbp and only scaffolds exceeding 1 Mbp in length will be displayed on the contact map. To modify these parameters:
+
+```bash
+# Set the bin size to 1 Mbp and display only scaffolds longer than 5 Mbp
+$ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --bin_size 1000 --min_len 5
+```
+
+Additionally, you can create `separate_plots.pdf , which illustrates the contact map for each scaffold individually:
+
+```bash
+$ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plots
+```
+
+To change the colormap, origin, border style, and normalization method for the contact maps, refer to the examples provided in the figure above.
+
+
 
 ## <span id="faqs">Frequently asked questions (FAQs)</span>
 

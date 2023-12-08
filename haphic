@@ -46,6 +46,8 @@ HELP_DOC = """
   sort       [Step3] Order and orient contigs within each group.
   build      [Step4] Build final scaffolds (pseudomolecules).
 
+  plot       Draw Hi-C contact map for the whole genome or each scaffold
+  
   allhic     Call a modified version of ALLHiC, in which the hot-start optimization
              has been fixed (source code: https://github.com/zengxiaofei/allhic).
   juicer     Show the guide to generate files for Juicebox visualization.
@@ -79,6 +81,7 @@ param_dict = {
         'reassign': 'HapHiC_reassign.py',
         'sort': 'HapHiC_sort.py',
         'build': 'HapHiC_build.py',
+        'plot': 'HapHiC_plot.py',
         'pipeline': 'HapHiC_pipeline.py',
         'allhic': 'allhic'}
 

@@ -346,6 +346,7 @@ To avoid the necessity of re-aligning Hi-C data, we have incorporated a YaHS-sty
 After constructing the final scaffolds, HapHiC automatically generates a shell script for visualization and curation in Juicebox. Ensure that [Java](https://openjdk.org/install/) and [samtools](https://github.com/samtools/samtools) have been installed and added to `$PATH` on your system. Then, run the following command:
 
 ```bash
+# bash, not sh
 $ bash juicebox.sh
 ```
 
@@ -389,7 +390,7 @@ By default, the bin size is set to 500 Kbp and only scaffolds exceeding 1 Mbp in
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --bin_size 1000 --min_len 5
 ```
 
-Additionally, you can create `separate_plots.pdf , which illustrates the contact map for each scaffold individually:
+Additionally, you can create `separate_plots.pdf` , which illustrates the contact map for each scaffold individually:
 
 ```bash
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plots
@@ -434,11 +435,13 @@ To change the colormap, origin, border style, and normalization method for the c
 
 If you use HapHiC in your work, please cite our preprint on bioRxiv:
 
-> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. (2023) Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *bioRxiv*, 2023.11.18.567668. doi: [https://doi.org/10.1101/2023.11.18.567668](https://doi.org/10.1101/2023.11.18.567668)
+> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. (2023) Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *bioRxiv*, 2023.11.18.567668.
+> doi: [https://doi.org/10.1101/2023.11.18.567668](https://doi.org/10.1101/2023.11.18.567668)
 
 If you use the optimization function for contig ordering and orientation (by default), please also cite ALLHiC:
 
-> Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845. doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)
+> Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845.
+> doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)
 
 
 

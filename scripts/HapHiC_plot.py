@@ -16,6 +16,7 @@ import pysam
 from portion import closed
 import collections
 import numpy as np
+from math import ceil
 
 import matplotlib
 matplotlib.use('Agg')
@@ -313,7 +314,7 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
         group_start_bin = 0
 
         for group in group_list:
-            group_bin_num = (group_size_dict[group] - 1) // bin_size + 1
+            group_bin_num = ceil(group_size_dict[group]/bin_size)
             group_end_bin = group_start_bin + group_bin_num
             intra_matrix = contact_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin]
             inter_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin] = 0
@@ -338,7 +339,7 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
         group_start_bin = 0
 
         for group in group_list:
-            group_bin_num = (group_size_dict[group] - 1) // bin_size + 1
+            group_bin_num = ceil(group_size_dict[group]/bin_size)
             group_end_bin = group_start_bin + group_bin_num
             normalized_inter_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin] = normalized_intra_matrix_dict[group]
             for n, row in enumerate(normalized_intra_matrix_dict[group]):
@@ -366,7 +367,7 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
         group_start_bin = 0
 
         for group in group_list:
-            group_bin_num = (group_size_dict[group] - 1) // bin_size + 1
+            group_bin_num = ceil(group_size_dict[group]/bin_size)
             group_end_bin = group_start_bin + group_bin_num
             intra_matrix = normalized_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin]
             for n, row in enumerate(intra_matrix):
@@ -453,7 +454,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     ytick_list = list()
     group_edge_list = list()
     for group in group_list:
-        group_bin_num = (group_size_dict[group] - 1) // bin_size + 1
+        group_bin_num = ceil(group_size_dict[group]/bin_size)
         ytick_list.append(ytick + group_bin_num / 2)
         ytick += group_bin_num
         group_edge_list.append(ytick - 0.5)
@@ -523,12 +524,12 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
     group_num = len(group_list)
 
     # ratio = height / width
-    nrows = (group_num - 1) // args.ncols + 1
+    nrows = ceil(group_num/args.ncols)
     ratio = nrows / args.ncols
 
     # convert inch to cm
     fig, axes = plt.subplots(
-            (len(group_list)-1)//args.ncols+1, args.ncols, 
+            ceil(len(group_list)/args.ncols), args.ncols, 
             figsize=(args.figure_width/2.54, ((args.figure_width-2)*ratio*1.2)/2.54), dpi=1000)
 
     ax_list = list()
@@ -542,7 +543,7 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
 
     group_start_bin = 0
     for n, group in enumerate(group_list):
-        group_bin_num = (group_size_dict[group] - 1) // bin_size + 1
+        group_bin_num = ceil(group_size_dict[group]/bin_size)
         group_end_bin = group_start_bin + group_bin_num
         group_matrix = contact_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin]
         group_start_bin += group_bin_num

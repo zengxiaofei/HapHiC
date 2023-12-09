@@ -49,7 +49,7 @@ def parse_agp(agp, bin_size):
 
         for line in f:
 
-            if not line.strip():
+            if line.startswith('#') or not line.strip():
                 continue
 
             cols = line.split()

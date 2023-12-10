@@ -70,7 +70,7 @@ def parse_agp(agp, bin_size):
                 frag_id = (ctg, ctg_raw_start, ctg_raw_end)
                 frag_set.add(frag_id)
                 group_frag_dict[group].add(frag_id)
-                
+
                 for group_bin in range(group_start_bin, group_end_bin + 1):
 
                     group_bin_start = group_bin * bin_size + 1
@@ -88,7 +88,7 @@ def parse_agp(agp, bin_size):
 
                     ctg_raw_bin_range = closed(ctg_raw_bin_start, ctg_raw_bin_end)
                     ctg_dict[ctg][ctg_raw_bin_range] = (group, group_bin)
-                
+
                     ctg_aln_start_bin = (ctg_raw_bin_start-1)//bin_size
                     ctg_aln_end_bin = (ctg_raw_bin_end-1)//bin_size
 
@@ -137,14 +137,14 @@ def parse_bam(bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_to
     def convert_group_bin_id(ctg, pos):
 
         for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
-            
+
             group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
-            
+
             if pos in ctg_raw_bin_range:
-                
+
                 if group_and_bin[0] not in group_list:
                     return None
-                
+
                 return group_to_total_bin_dict[group_and_bin]
 
 
@@ -438,7 +438,7 @@ def get_cmap(cmap):
 
 def normalized_imshow(ax, contact_matrix, cmap, vmax):
 
-    heatmap = ax.imshow(contact_matrix, cmap=cmap)
+    heatmap = ax.imshow(contact_matrix, cmap=cmap, interpolation='none')
     norm = colors.Normalize(vmin=0, vmax=vmax)
     heatmap.set_norm(norm)
 

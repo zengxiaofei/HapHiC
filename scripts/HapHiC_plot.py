@@ -402,15 +402,23 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
 def get_resolution(length, n):
 
     for resolution in (0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000):
-        n_xticks = length // (resolution * 1000000)
+        n_xticks = length // int(resolution * 1000000) + 1
         if n_xticks < n:
             return resolution
 
 
-def get_xticks(n_bins, resolution, bin_size):
+def get_xticks(length, resolution, bin_size):
 
-    xtick_list = list(range(0, n_bins, resolution * 1000000 // bin_size))
-    xticklabel_list = ['{}'.format(x * bin_size // 1000000) for x in xtick_list]
+    xtick_list, xtick_values = list(), list()
+    for x in range(0, length+1, int(resolution * 1000000)):
+        xtick_list.append(x // bin_size)
+        x_mb = x / 1000000
+        xtick_values.append(x / 1000000)
+
+    if any([True for v in xtick_values if v != int(v)]):
+        xticklabel_list = [str(v) for v in xtick_values]
+    else:
+        xticklabel_list = [str(int(v)) for v in xtick_values]
 
     return xtick_list, xticklabel_list
 
@@ -480,8 +488,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
 
     resolution = get_resolution(total_len, 10)
 
-
-    xtick_list, xticklabel_list = get_xticks(total_n_bins, resolution, bin_size)
+    xtick_list, xticklabel_list = get_xticks(total_len, resolution, bin_size)
 
     ax.set_xticks(xtick_list)
     ax.set_xticklabels(xticklabel_list, size=6)
@@ -568,7 +575,7 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
 
         resolution = get_resolution(group_len, 6)
 
-        xtick_list, xticklabel_list = get_xticks(group_n_bins, resolution, bin_size)
+        xtick_list, xticklabel_list = get_xticks(group_len, resolution, bin_size)
 
         ax.set_xticks(xtick_list)
         ax.set_xticklabels(xticklabel_list, size=5)

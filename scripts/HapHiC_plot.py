@@ -315,7 +315,7 @@ def bnewt(A, tol=1e-6, x0=None, delta=0.1, Delta=3, fl=0):
     return x, res
 
 
-def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, normalization, vmax_coef):
+def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, normalization, vmax_coef, manual_vmax):
 
 
     inter_matrix = contact_matrix.copy()
@@ -361,8 +361,12 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
                         non_diagonal_list.append(i)
             group_start_bin += group_bin_num
 
-        vmax = np.median(non_diagonal_list) * vmax_coef
-        logger.info('The vmax for the KR-normalized matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+        if manual_vmax < 0:
+            vmax = np.median(non_diagonal_list) * vmax_coef
+            logger.info('The vmax for the KR-normalized matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+        else:
+            vmax = manual_vmax
+            logger.info('The vmax for the KR-normalized matrix is manually designated as {})'.format(vmax))
 
         return normalized_inter_matrix, vmax
 
@@ -389,12 +393,21 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
                         non_diagonal_list.append(i)
             group_start_bin += group_bin_num
 
-        vmax = np.median(non_diagonal_list) * vmax_coef
+        if manual_vmax < 0: 
+            vmax = np.median(non_diagonal_list) * vmax_coef
+        else:
+            vmax = manual_vmax
 
         if normalization == 'log10':
-            logger.info('The vmax for the log-normalized matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+            if manual_vmax < 0:
+                logger.info('The vmax for the log-normalized matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+            else:
+                logger.info('The vmax for the log-normalized matrix is manually designated as {}'.format(vmax))
         else:
-            logger.info('The vmax for the raw matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+            if manual_vmax < 0:
+                logger.info('The vmax for the raw matrix is calculated to be {} ({} * median)'.format(vmax, vmax_coef))
+            else:
+                logger.info('The vmax for the raw matrix is manually designated as {}'.format(vmax))
 
         return normalized_matrix, vmax
 
@@ -468,7 +481,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     plt.rcParams['pdf.fonttype'] = 42
     # convert inch to cm
     fig, ax = plt.subplots(figsize=(args.figure_width/2.54, args.figure_height/2.54), dpi=1000)
-    plt.subplots_adjust(bottom=0.05, left=0.1, right=1, top=0.95)
+    plt.subplots_adjust(bottom=0.05, left=0.15, right=1, top=0.95)
 
     # set yticks
     ytick = 0
@@ -626,6 +639,9 @@ def parse_arguments():
             help='for contact matrix visualization, values greater than `vmax_coef` times the median of the intra-scaffold matrices '
             'are displayed in the same color, default: %(default)s')
     parser.add_argument(
+            '--manual_vmax', type=float, default=-1,
+            help='manually designate the maximum value of the colorbar (vmax) using a positive float number, default: disabled')
+    parser.add_argument(
             '--separate_plots', default=False, action='store_true', 
             help='generate `separate_plots.pdf`, depicting the heatmap for each scaffold individually, default: %(default)s')
     parser.add_argument(
@@ -702,7 +718,7 @@ def main():
         assert args.bam.endswith('.pkl')
         contact_matrix = load_pickle(args.bam, args)
 
-    normalized_contact_matrix, vmax = normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, args.normalization, args.vmax_coef)
+    normalized_contact_matrix, vmax = normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, args.normalization, args.vmax_coef, args.manual_vmax)
 
     draw_heatmap(normalized_contact_matrix, group_list, group_size_dict, bin_size, vmax, args)
 

@@ -1210,6 +1210,7 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
 
     # output corrected assembly in FASTA format, even if no contigs are corrected (for pipeline)
     corrected_assembly_file = 'corrected_asm.fa'
+    corrected_ctgs_file = 'corrected_ctgs.txt'
     logger.info('Generating corrected assembly file...')
 
     # check file name (rare case, for security concern)
@@ -1226,7 +1227,7 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
             for ctg, ctg_info in fa_dict.items():
                 f.write('>{}\n{}\n'.format(ctg, ctg_info[0]))
         # output a list for corrected contigs
-        with open('corrected_ctgs.txt', 'w') as f:
+        with open(corrected_ctgs_file, 'w') as f:
             for ctg, ctg_info in fa_dict.items():
                 if ctg not in unbroken_ctgs:
                     assert ':' in ctg
@@ -1243,6 +1244,9 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
     else:
         logger.info('No corrected contigs were found. Simply create a symbolic link of the input assembly')
         os.symlink(args.fasta, corrected_assembly_file)
+        # generate an empty corrected_ctgs.txt
+        with open(corrected_ctgs_file, 'w') as f:
+            pass
         # generate new gfa files for reassignment (for quick view only)
         if args.quick_view and read_depth_dict and len(args.gfa.split(',')) >= 2:
             for gfa in args.gfa.split(','):

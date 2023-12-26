@@ -459,7 +459,7 @@ def get_cmap(cmap):
 
 def normalized_imshow(ax, contact_matrix, cmap, vmax):
 
-    heatmap = ax.imshow(contact_matrix, cmap=cmap, interpolation='none')
+    heatmap = ax.imshow(contact_matrix, cmap=cmap)
     norm = colors.Normalize(vmin=0, vmax=vmax)
     heatmap.set_norm(norm)
 

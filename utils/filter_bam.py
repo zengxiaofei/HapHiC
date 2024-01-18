@@ -7,11 +7,10 @@
 
 import argparse
 import os
-import sys
 import re
 
 
-def parse_bam(bam, mapq, NM, remove_dup, remove_singletons, threads):
+def parse_bam(bam, mapq, NM, remove_dup, remove_singletons, single_end_mapq_filtering, threads):
     if not remove_dup:
         cmd = 'samtools view -h {} -@ {}'.format(bam, threads)
     else:
@@ -39,13 +38,16 @@ def parse_bam(bam, mapq, NM, remove_dup, remove_singletons, threads):
                 if NM:
                     match = re.match(r'.+NM:i:(\d+)', line)
                     match2 = re.match(r'.+NM:i:(\d+)', line2)
-                    if max(int(match.groups()[0]), int(match2.groups()[0])) >= NM:
+                    if int(match.groups()[0]) >= NM or int(match2.groups()[0]) >= NM:
                         line = f.readline()
                         continue
                 # remove read pair if MAPQ < cutoff
-                if min(int(cols1[4]), int(cols2[4])) >= mapq:
-                    print(line, end='')
-                    print(line2, end='')
+                if single_end_mapq_filtering:
+                    if int(cols1[4]) >= mapq or int(cols2[4]) >= mapq:
+                        print(line+line2, end='')
+                else:
+                    if int(cols1[4]) >= mapq and int(cols2[4]) >= mapq:
+                        print(line+line2, end='')
             line = f.readline()
 
 
@@ -55,6 +57,9 @@ def main():
             'bam', help='input BAM file, should not be sorted or name-sorted, do NOT sort it by coordinate')
     parser.add_argument(
             'mapq', type=int, help='MAPQ cutoff, read pairs with both MAPQ >= this value will be kept')
+    parser.add_argument(
+            '--single_end_mapq_filtering', default=False, action='store_true', 
+            help='when this parameter is added, either end of a read pair having a MAPQ >= `mapq` will be kept')
     parser.add_argument(
             '--NM', type=int, default=None,
             help='edit distance cutoff, read pairs with single-end NM >= this value will be removed, default:%(default)s')
@@ -69,7 +74,7 @@ def main():
             help='threads for samtools view')
     args = parser.parse_args()
 
-    parse_bam(args.bam, args.mapq, args.NM, args.remove_dup, args.remove_singletons, args.threads)
+    parse_bam(args.bam, args.mapq, args.NM, args.remove_dup, args.remove_singletons, args.single_end_mapq_filtering, args.threads)
 
 
 if __name__ == '__main__':

@@ -482,28 +482,30 @@ def remove_allelic_HiC_links(fa_dict, ctg_coord_dict, full_link_dict, args, flan
 
         return weakest_edge
 
-    def split_cliques(graph, cliques, ploidy):
+    def split_cliques(graph, cliques, ploidy, cached_cliques):
 
-        new_cliques = list()
+        new_cliques = set()
 
         for clique in cliques:
 
+            clique = tuple(clique)
+
             if len(clique) > ploidy:
-
-                subgraph = graph.subgraph(clique)
-                node1, node2, _ = get_weakest_edge(subgraph)
-
-                # unfreeze graph
-                subgraph = Graph(subgraph)
-                # remove weakest edges
-                subgraph.remove_edge(node1, node2)
-                # find sub cliques after removing weakest edges
-                sub_cliques = find_cliques(subgraph)
-                # call split_cliques recursively
-                new_cliques.extend(split_cliques(subgraph, sub_cliques, ploidy))
-
+                if clique not in cached_cliques:
+                    subgraph = graph.subgraph(clique)
+                    node1, node2, _ = get_weakest_edge(subgraph)
+                    # unfreeze graph
+                    subgraph = Graph(subgraph)
+                    # remove weakest edges
+                    subgraph.remove_edge(node1, node2)
+                    # find sub cliques after removing weakest edges
+                    sub_cliques = find_cliques(subgraph)
+                    # cache sub_cliques
+                    cached_cliques.add(clique)
+                    # call split_cliques recursively
+                    new_cliques |= split_cliques(subgraph, sub_cliques, ploidy, cached_cliques)
             else:
-                new_cliques.append(clique)
+                new_cliques.add(tuple(clique))
 
         return new_cliques
 
@@ -563,8 +565,10 @@ def remove_allelic_HiC_links(fa_dict, ctg_coord_dict, full_link_dict, args, flan
 
         allele_graph = Graph(allele_matrix)
         allele_groups = find_cliques(allele_graph)
-        allele_groups = split_cliques(allele_graph, allele_groups, ploidy)
-
+        cached_cliques = set()
+        allele_groups = split_cliques(allele_graph, allele_groups, ploidy, cached_cliques)
+        del cached_cliques
+        gc.collect()
         # use a set to remove redundant allele groups
         unique_allele_groups = set()
 

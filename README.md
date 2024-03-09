@@ -20,7 +20,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 **Recent updates:**
 
 * Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
-* Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp`  for compatibility with the Juicebox visualization method suggested by YaHS.
+* Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp` for compatibility with the Juicebox visualization method suggested by YaHS.
 
 **Terminology:** To ensure concision and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
 
@@ -86,7 +86,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 **Notes:**
 
 * Here, `asm.fa` can be haplotype-collapsed contigs (e.g., `p_ctg` in hifiasm), haplotype-phased unitigs (e.g., `p_utg` in hifiasm), or one or more sets of haplotype-resolved contigs (e.g., `hap*.p_utg` in hifiasm). In addition, `asm.fa` may also be scaffolds output by other scaffolders.
-* You can prepare the BAM file according to your own preferences or requirements, but **DO NOT** sort it by coordinate. If your BAM file is already sorted by coordinate, you need to resort it by read name ( `samtools sort -n` ).
+* You can prepare the BAM file according to your own preferences or requirements, but **DO NOT** sort it by coordinate. If your BAM file is already sorted by coordinate, you need to resort it by read name (`samtools sort -n`).
 * We **DO NOT** recommend the Juicer pipeline for Hi-C reads alignment, particularly in haplotype-phased assemblies.
 
 ### <span id="pipeline">Run HapHiC scaffolding pipeline</span>
@@ -130,15 +130,15 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --threads 8 --pr
 
 **Parameters**
 
-For more information, run `haphic pipeline --help` .
+For more information, run `haphic pipeline --help`.
 
 **Final outputs**
 
-* `01.cluster/corrected_asm.fa` : The corrected assembly in FASTA format. This file is generated only when assembly correction is enabled.
-* `04.build/scaffolds.agp` : A [SALSA](https://github.com/marbl/SALSA)-style [AGP file](https://www.ncbi.nlm.nih.gov/assembly/agp/AGP_Specification/) containing information about scaffold assignment, ordering and orientation information for all sequences in `corrected_asm.fa`. If there are any chimeric contigs that are corrected by HapHiC, the broken contigs will be assigned new IDs.
-* `04.build/scaffolds.raw.agp` : A [YaHS](https://github.com/c-zhou/yahs)-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `asm.fa`. The broken contigs will not be assigned new IDs, but their starting and ending coordinates in the raw contigs will be displayed in the seventh and eighth columns.
-* `04.build/scaffolds.fa` : The final scaffolds in FASTA format.
-* `04.build/juicebox.sh` : A shell script for [Juicebox visualization and curation](#juicebox).
+* `01.cluster/corrected_asm.fa`: The corrected assembly in FASTA format. This file is generated only when assembly correction is enabled.
+* `04.build/scaffolds.agp`: A [SALSA](https://github.com/marbl/SALSA)-style [AGP file](https://www.ncbi.nlm.nih.gov/assembly/agp/AGP_Specification/) containing information about scaffold assignment, ordering and orientation information for all sequences in `corrected_asm.fa`. If there are any chimeric contigs that are corrected by HapHiC, the broken contigs will be assigned new IDs.
+* `04.build/scaffolds.raw.agp`: A [YaHS](https://github.com/c-zhou/yahs)-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `asm.fa`. The broken contigs will not be assigned new IDs, but their starting and ending coordinates in the raw contigs will be displayed in the seventh and eighth columns.
+* `04.build/scaffolds.fa`: The final scaffolds in FASTA format.
+* `04.build/juicebox.sh`: A shell script for [Juicebox visualization and curation](#juicebox).
 
 **Note:** Although the one-line command is convenient, the automatic parameter tuning may fail, leading to poor results or even a pipeline interruption in rare cases. If this occurs, we recommend [running each step individually with manual parameter tuning](#step_by_step) or trying the [quick view mode](#quick_view) described below.
 
@@ -148,7 +148,7 @@ For more information, run `haphic pipeline --help` .
 
 ### <span id="step1">[Step 1]. Clustering</span>
 
-Before clustering, HapHiC performs preprocessing to correct assembly misjoins, filter out short, mis-assembled contigs, and remove allelic Hi-C links. After that, a Markov cluster algorithm (MCL algorithm) is used to cluster the contigs into groups. Unlike agglomerative hierarchical clustering (AHC, used in LACHESIS and ALLHiC), which specifies the number of clusters, the MCL Algorithm implicitly controls it with a parameter called "inflation". The higher the inflation, the more the groups are clustered. The main problem with AHC is that even though the number of clusters is specified, contigs from different chromosomes may also be clustered into the same group. This is common in phased diploid or polyploid genome assemblies. To solve this, HapHiC tries a series of inflations to cluster the contigs (controlled by `min_inflation` and `max_inflation` ) and recommends a "best" one based on both the expected number of chromosomes `nchrs` provided and the length distribution of the groups.
+Before clustering, HapHiC performs preprocessing to correct assembly misjoins, filter out short, mis-assembled contigs, and remove allelic Hi-C links. After that, a Markov cluster algorithm (MCL algorithm) is used to cluster the contigs into groups. Unlike agglomerative hierarchical clustering (AHC, used in LACHESIS and ALLHiC), which specifies the number of clusters, the MCL Algorithm implicitly controls it with a parameter called "inflation". The higher the inflation, the more the groups are clustered. The main problem with AHC is that even though the number of clusters is specified, contigs from different chromosomes may also be clustered into the same group. This is common in phased diploid or polyploid genome assemblies. To solve this, HapHiC tries a series of inflations to cluster the contigs (controlled by `min_inflation` and `max_inflation`) and recommends a "best" one based on both the expected number of chromosomes `nchrs` provided and the length distribution of the groups.
 
 ```bash
 $ /path/to/HapHiC/haphic cluster asm.fa HiC.filtered.bam nchrs
@@ -156,29 +156,29 @@ $ /path/to/HapHiC/haphic cluster asm.fa HiC.filtered.bam nchrs
 
 **Parameters**
 
-For more information, run `haphic cluster --help` .
+For more information, run `haphic cluster --help`.
 
 **Main outputs**
 
-* `corrected_asm.fa` : The corrected assembly in FASTA format. This file is generated only when assembly correction is enabled.
+* `corrected_asm.fa`: The corrected assembly in FASTA format. This file is generated only when assembly correction is enabled.
 
-* `corrected_ctgs.txt` : A text file listing the IDs of all corrected contigs.
+* `corrected_ctgs.txt`: A text file listing the IDs of all corrected contigs.
 
-* `full_links.pkl` : A binary file that stores the number of Hi-C links between each contig pair.
+* `full_links.pkl`: A binary file that stores the number of Hi-C links between each contig pair.
 
-* `HT_links.pkl` : A binary file that records the number of Hi-C links between each half of contig pairs.
+* `HT_links.pkl`: A binary file that records the number of Hi-C links between each half of contig pairs.
 
-* `paired_links.clm` : A text file recording the positional information of paired Hi-C links.
+* `paired_links.clm`: A text file recording the positional information of paired Hi-C links.
 
-* `inflation_*` : Output directories for respective inflations.
+* `inflation_*`: Output directories for respective inflations.
 
-  ├── `group*.txt` : Files containing the contigs and their basic information (including lengths and numbers of restriction sites) for each group, also reffered to as `counts_RE.txt` in ALLHiC.
+  ├── `group*.txt`: Files containing the contigs and their basic information (including lengths and numbers of restriction sites) for each group, also reffered to as `counts_RE.txt` in ALLHiC.
 
-  └── `mcl_inflation_*.clusters.txt` : Markov clustering results.
+  └── `mcl_inflation_*.clusters.txt`: Markov clustering results.
 
 **The "best" inflation**
 
-You can find the "best" inflation recommendation in the log file `HapHiC_cluster.log` , like:
+You can find the "best" inflation recommendation in the log file `HapHiC_cluster.log`, like:
 
 ```
 2022-11-07 17:50:08 <HapHiC_cluster.py> [recommend_inflation] You could try inflation from 1.20 (length ratio = 0.75)
@@ -186,13 +186,13 @@ You can find the "best" inflation recommendation in the log file `HapHiC_cluster
 
 In some cases, HapHiC cannot get the "best" one. It could be due to inappropriate parameters or extensive assembly errors. Check whether the parameters used are correct / appropriate and then try to tune the parameters for assembly correction, contig / Hi-C link filtration, or Markov Clustering:
 
-``````
+```
 2022-11-19 13:20:38 <HapHiC_cluster.py> [recommend_inflation] It seems that some chromosomes were grouped together (length ratio = 0.5)...
-``````
+```
 
 ### <span id="step2">[Step 2] Reassignment</span>
 
-In the previous step, some contigs may have been filtered out before clustering or assigned to incorrect groups. Additionally, the number of final clusters output by Markov clustering may exceed the specified number of chromosomes ( `nchrs` ). To address these issues, we added a reassignment step to rescue contigs that are not in any groups, reassign contigs to the correct groups, and perform an additional agglomerative hierarchical clustering to concatenate groups if necessary. The input files `full_links.pkl` , `mcl_inflation_x.clusters.txt ` , and `paired_links.clm` are outputs from the clustering step, where `x` represents the "best" inflation value:
+In the previous step, some contigs may have been filtered out before clustering or assigned to incorrect groups. Additionally, the number of final clusters output by Markov clustering may exceed the specified number of chromosomes (`nchrs`). To address these issues, we added a reassignment step to rescue contigs that are not in any groups, reassign contigs to the correct groups, and perform an additional agglomerative hierarchical clustering to concatenate groups if necessary. The input files `full_links.pkl`, `mcl_inflation_x.clusters.txt`, and `paired_links.clm` are outputs from the clustering step, where `x` represents the "best" inflation value:
 
 ```bash
 $ /path/to/HapHiC/haphic reassign asm.fa full_links.pkl mcl_inflation_x.clusters.txt paired_links.clm --nclusters nchrs
@@ -202,13 +202,13 @@ $ /path/to/HapHiC/haphic reassign asm.fa full_links.pkl mcl_inflation_x.clusters
 
 **Parameters**
 
-For more information, run `haphic reassign --help` .
+For more information, run `haphic reassign --help`.
 
 **Main outputs**
 
-* `final_groups/group*.txt` : Files containing the contigs and their basic information for each final group after reassignment.
-* `final_groups/final_cluster.txt` : The final clustering result.
-* `split_clms/` : A directory containing group-specific CLM files.
+* `final_groups/group*.txt`: Files containing the contigs and their basic information for each final group after reassignment.
+* `final_groups/final_cluster.txt`: The final clustering result.
+* `split_clms/`: A directory containing group-specific CLM files.
 
 ### <span id="step3">[Step 3] Ordering and orientation</span>
 
@@ -222,12 +222,12 @@ $ /path/to/HapHiC/haphic sort asm.fa HT_links.pkl split_clms final_groups/group*
 
 **Parameters**
 
-For more information, run `haphic sort --help` .
+For more information, run `haphic sort --help`.
 
 **Main outputs**
 
-* `group*.tour.sav` : The fast sorting result of contigs within each group.
-* `group*.tour` : The final contig ordering and orientation result for each group after ALLHiC optimization.
+* `group*.tour.sav`: The fast sorting result of contigs within each group.
+* `group*.tour`: The final contig ordering and orientation result for each group after ALLHiC optimization.
 
 ### <span id="step4">[Step 4] Building pseudomolecules</span>
 
@@ -239,7 +239,7 @@ The final step is to build the scaffolds (pseudomolecules) using the chromosome 
 $ /path/to/HapHiC/haphic build asm.fa asm.fa HiC.filtered.bam group*.tour
 ```
 
-**If assembly correction has been performed**, use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa` . Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
+**If assembly correction has been performed**, use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa`. Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
 
 ```bash
 $ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam group*.tour --corrected_ctgs corrected_ctgs.txt
@@ -251,24 +251,24 @@ $ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam group*.t
 
 **Parameters**
 
-For more information, run `haphic build --help` .
+For more information, run `haphic build --help`.
 
 **Main outputs**
 
-* `scaffolds.agp` : A SALSA-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `corrected_asm.fa`. If there are any chimeric contigs that are corrected by HapHiC, the broken contigs will be assigned new IDs.
-* `scaffolds.raw.agp` : A YaHS-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `asm.fa`. The broken contigs will not be assigned new IDs, but their starting and ending coordinates in the raw contigs will be displayed in the seventh and eighth columns.
-* `scaffolds.fa` : The final scaffolds in FASTA format.
-* `juicebox.sh` : A shell script for [Juicebox visualization and curation](#juicebox).
+* `scaffolds.agp`: A SALSA-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `corrected_asm.fa`. If there are any chimeric contigs that are corrected by HapHiC, the broken contigs will be assigned new IDs.
+* `scaffolds.raw.agp`: A YaHS-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `asm.fa`. The broken contigs will not be assigned new IDs, but their starting and ending coordinates in the raw contigs will be displayed in the seventh and eighth columns.
+* `scaffolds.fa`: The final scaffolds in FASTA format.
+* `juicebox.sh`: A shell script for [Juicebox visualization and curation](#juicebox).
 
 
 
 ## <span id="hifiasm">Work with hifiasm (experimental)</span>
 
-When scaffolding a phased [hifiasm](https://github.com/chhylp123/hifiasm) assembly, you can run HapHiC with the GFA file(s) output by hifiasm. Here, the term "phased hifiasm assembly" refers to the haplotype-resolved primary contigs assembled via the trio binning or Hi-C-based algorithm ( `*.hap*.p_ctg.gfa` ), as well as the phased unitigs ( `*.p_utg.gfa` ). 
+When scaffolding a phased [hifiasm](https://github.com/chhylp123/hifiasm) assembly, you can run HapHiC with the GFA file(s) output by hifiasm. Here, the term "phased hifiasm assembly" refers to the haplotype-resolved primary contigs assembled via the trio binning or Hi-C-based algorithm (`*.hap*.p_ctg.gfa`), as well as the phased unitigs (`*.p_utg.gfa`). 
 
-HapHiC uses the read depth information in the GFA file(s) to filter out potential collapsed contigs/unitigs before clustering.  If more than one GFA file is provided, HapHiC assumes these GFA files are haplotype-specific ( `*.hap*.p_ctg.gfa` ), and artificially removes or reduces the Hi-C links between the haplotypes according to this phasing information. Note that the contigs/unitigs in GFA file(s) should match those in FASTA file. Either `.gfa`  or `noseq.gfa` is acceptable.
+HapHiC uses the read depth information in the GFA file(s) to filter out potential collapsed contigs/unitigs before clustering.  If more than one GFA file is provided, HapHiC assumes these GFA files are haplotype-specific (`*.hap*.p_ctg.gfa`), and artificially removes or reduces the Hi-C links between the haplotypes according to this phasing information. Note that the contigs/unitigs in GFA file(s) should match those in FASTA file. Either `.gfa` or `noseq.gfa` is acceptable.
 
-```shell
+```bash
 # (1) For hifiasm primary unitigs, use the GFA file to filter out potential collapsed unitigs before clustering
 $ /path/to/HapHiC/haphic pipeline p_utg.fa HiC.filtered.bam nchrs --gfa p_utg.gfa
 
@@ -293,7 +293,7 @@ You can try the quick view mode in HapHiC when:
 
 In quick view mode, HapHiC simply uses the fast sorting to order and orient all contigs without clustering. The result is similar to `*.0.hic` in [3D-DNA](https://github.com/aidenlab/3d-dna). Most parameters are disabled in this mode, but you can use `--correct_nrounds` to correct input contigs. When scaffolding a haplotype-resolved hifiasm assembly ( `*.hap*.p_ctg.gfa` ), you can still partition contigs into different haplotypes with the haplotype-specific GFA files.
 
-```shell
+```bash
 # Autohic will ignore the parameter "nchrs", it can be any integer
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --quick_view
 # Correct input contigs before a quick view
@@ -350,13 +350,16 @@ After constructing the final scaffolds, HapHiC automatically generates a shell s
 $ bash juicebox.sh
 ```
 
-**Note:** In the output log file `out_JBAT.log` , you can find the corresponding scale factor, e.g., `[I::main_pre] scale factor: 2` . To ensure proper alignment of Hi-C contact maps with the boundaries of scaffolds and superscaffolds in Juicebox, please set your own scale factor in Juicebox through the menu `Assembly > Set Scale` .
+**Notes:** 
+
+* In the output log file `out_JBAT.log` , you can find the corresponding scale factor, e.g., `[I::main_pre] scale factor: 2` . To ensure proper alignment of Hi-C contact maps with the boundaries of scaffolds and superscaffolds in Juicebox, please set your own scale factor in Juicebox through the menu `Assembly > Set Scale` .
+* For large genomes, it is necessary to adjust the memory settings in the juicebox.sh file for Java (e.g. set to `-Xmx64G` or higher) to avoid out-of-memory errors or to improve the execution speed.
 
 After manual curation in Juicebox, you will obtain the modified assembly file `out_JBAT.review.assembly` . To generate the final FASTA file for the scaffolds:
 
 ```bash
 # Generate the final FASTA file for the scaffolds
-$ /path/to/HapHiC/scripts/juicer post -o out_JBAT out_JBAT.review.assembly out_JBAT.liftover.agp asm.fa
+$ /path/to/HapHiC/utils/juicer post -o out_JBAT out_JBAT.review.assembly out_JBAT.liftover.agp asm.fa
 ```
 
 

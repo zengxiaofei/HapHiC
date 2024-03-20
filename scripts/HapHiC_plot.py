@@ -317,32 +317,32 @@ def bnewt(A, tol=1e-6, x0=None, delta=0.1, Delta=3, fl=0):
 
 def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, normalization, vmax_coef, manual_vmax):
 
-
-    inter_matrix = contact_matrix.copy()
-    normalized_intra_matrix_dict = dict()
-
     if normalization == 'KR':
+
+        # a dict used to save intra-scaffold matrix for each scaffold
+        normalized_intra_matrix_dict = dict()
 
         logger.info('Normalizing contact mattrix using the Knight-Ruiz (KR) balancing algorithm')
         group_start_bin = 0
+
+        # save indices for zero-value elements
+        zero_indices = np.argwhere(contact_matrix == 0)
+        # to avoid divide-by-zero warning/error
+        contact_matrix = contact_matrix + 0.00001
 
         for group in group_list:
             group_bin_num = ceil(group_size_dict[group]/bin_size)
             group_end_bin = group_start_bin + group_bin_num
             intra_matrix = contact_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin]
-            inter_matrix[group_start_bin:group_end_bin,group_start_bin:group_end_bin] = 0
             group_start_bin += group_bin_num
 
-            # for intra-scaffold KR normalization for each scaffold
-            # to avoid divide-by-zero warning/error
-            intra_matrix = intra_matrix + 0.00001
+            # intra-scaffold KR normalization for each scaffold
             x, res = bnewt(intra_matrix)
             d = np.diag(x)
             normalized_intra_matrix = d @ intra_matrix @ d
             normalized_intra_matrix_dict[group] = normalized_intra_matrix
 
-        # to avoid divide-by-zero warning/error
-        contact_matrix = contact_matrix + 0.00001
+        # inter-scaffold KR normalization
         x, res = bnewt(contact_matrix)
         d = np.diag(x)
         normalized_inter_matrix = d @ contact_matrix @ d
@@ -360,6 +360,9 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
                     if n != m:
                         non_diagonal_list.append(i)
             group_start_bin += group_bin_num
+
+        # retrieve zero values
+        normalized_inter_matrix[zero_indices[:, 0], zero_indices[:, 1]] = 0
 
         if manual_vmax < 0:
             vmax = np.median(non_diagonal_list) * vmax_coef
@@ -713,6 +716,8 @@ def main():
         contact_matrix = parse_bam(
                 args.bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set, args.threads)
         contact_matrix = contact_matrix + np.transpose(contact_matrix)
+        for i in range(contact_matrix.shape[0]):
+            contact_matrix[i,i] /= 2
         output_pickle(contact_matrix, args)
     else:
         assert args.bam.endswith('.pkl')

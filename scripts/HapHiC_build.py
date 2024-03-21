@@ -189,9 +189,9 @@ def generate_juicebox_script(args):
             f.write('ln -s {} .\n'.format(args.raw_fasta))
         f.write('samtools faidx {}\n'.format(raw_fasta_basename))
         # For many haplotype-resolved assemblies, the default MAPQ filtering (-q 10) is too strict.
-        # Additionally, the juicer pre in YaHS has some problems in filtering unsorted bam (although this should be possible)
+        # Additionally, the `juicer pre` command in YaHS has some problems in filtering unsorted bam (although this should be possible)
         f.write('{} pre -a -q 1 -o out_JBAT {} {}.raw.agp {}.fai >out_JBAT.log 2>&1\n'.format(
-            juicer, args.bam, args.prefix, raw_fasta_basename))
+            juicer, args.alignments, args.prefix, raw_fasta_basename))
         f.write('(java -jar -Xmx32G {} pre out_JBAT.txt out_JBAT.hic.part <(cat out_JBAT.log | grep PRE_C_SIZE '.format(juicer_tools))
         f.write("| awk '{print $2\" \"$3}')) && (mv out_JBAT.hic.part out_JBAT.hic)\n")
 
@@ -206,7 +206,8 @@ def parse_arguments():
             help='raw (uncorrected) draft genome in FASTA format, used for generating the script for juicebox visualization and curation. '
             'When `--correct_nrounds` was not set, this parameter should be the same as the parameter `fasta`')
     parser.add_argument(
-            'bam', help='filtered Hi-C read mapping result in BAM format, used for generating the script for juicebox visualization and curation')
+            'alignments', help='filtered Hi-C read alignments in BAM format, used for generating the script for juicebox visualization and curation. '
+            'When the alignment file is in pairs format, use the `alignments.bed` file generated during the clustering step instead')
     parser.add_argument(
             'tours', nargs='+', help='`*.tour` files generated in the sorting (ordering and orientation) step')
     parser.add_argument(

@@ -19,6 +19,7 @@ import random
 from itertools import combinations
 from array import array
 from portion import closed, empty
+import gzip
 
 from math import ceil
 from numpy import inf, int32, float32, zeros, quantile, arange, power, allclose, median
@@ -243,7 +244,7 @@ def stat_fragments(fa_dict, RE, read_depth_dict, nchrs=0, flank=0, Nx=100, bin_s
     len_sum = 0
     Nx_frag_set = set()
 
-    for n, (frag, frag_len) in enumerate(sorted_frag_list):
+    for frag, frag_len in sorted_frag_list:
         len_sum += frag_len
         if len_sum/total_len*100 < Nx or Nx == 100:
             Nx_frag_set.add(frag)
@@ -619,7 +620,6 @@ def remove_allelic_HiC_links(fa_dict, ctg_coord_dict, full_link_dict, args, flan
                     index_2 = group_pair[1].index(ctg_1)
 
                 if solution[1][index_1] != index_2:
-                    rows, cols = solution
                     nonmax_ctg_pair_set.add(ctg_name_pair)
                     break
             # break nested loops
@@ -658,7 +658,7 @@ def reduce_inter_hap_HiC_links(link_dict, read_depth_dict, phasing_weight, targe
     logger.info('Reducing inter-haplotype Hi-C links in {}...'.format(target))
 
     removed_frag_name_pairs = set()
-    for frag_name_pair, links in link_dict.items():
+    for frag_name_pair, _ in link_dict.items():
         if read_depth_dict[frag_name_pair[0]][0] != read_depth_dict[frag_name_pair[1]][0]:
             link_dict[frag_name_pair] -= link_dict[frag_name_pair] * phasing_weight
             if link_dict[frag_name_pair] == 0:
@@ -1082,7 +1082,7 @@ def break_and_update_ctgs(
         final_break_frag_dict[frag_source].pop(father_index)
         final_break_pos_dict[frag_source].pop(father_index)
 
-        for n, (point, cov) in enumerate(break_points, 1):
+        for n, (point, _) in enumerate(break_points, 1):
 
             # the first breakpoint
             if n == 1:
@@ -1260,6 +1260,53 @@ def correct_assembly(ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, 
     return nbroken_ctgs, final_break_pos_dict, final_break_frag_dict
 
 
+def parse_pairs_for_correction(fa_dict, args):
+
+    """parse pairs file for contig correction"""
+    logger.info('Parsing input pairs file for contig correction...')
+
+    resolution = args.correct_resolution
+
+    ctg_cov_dict = dict()
+    ctg_link_pos_dict = defaultdict(lambda: array('i'))
+
+    for ctg, ctg_info in fa_dict.items():
+        ctg_cov_dict[ctg] = ndarray([0] * (ctg_info[1]//resolution+1), dtype=int32)
+
+    if args.aln_format == 'pairs':
+        fopen = open
+    else:
+        assert args.aln_format == 'bgzipped_pairs'
+        fopen = gzip.open
+
+    with fopen(args.alignments, 'rt') as f:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            ref, mref = cols[1], cols[3]
+
+            if ref != mref:
+                continue
+
+            # skip contigs that not in the fasta file
+            if ref not in fa_dict:
+                continue
+
+            pos, mpos = int(cols[2]) - 1, int(cols[4]) - 1
+
+            # get the spanning region of an alignment
+            spanning_region = sorted([pos, mpos])
+            spanning_start_bin = spanning_region[0]//resolution
+            spanning_end_bin = spanning_region[1]//resolution
+
+            ctg_cov_dict[ref][spanning_start_bin:spanning_end_bin+1] += 1
+            ctg_link_pos_dict[ref].extend(spanning_region)
+
+    return ctg_cov_dict, ctg_link_pos_dict
+
+
 def parse_bam_for_correction(fa_dict, args):
 
     """parse BAM file for contig correction"""
@@ -1276,12 +1323,11 @@ def parse_bam_for_correction(fa_dict, args):
 
     format_options = [b'filter=flag.read1 && refid == mrefid']
 
-    with pysam.AlignmentFile(args.bam, mode='rb', threads=args.threads, format_options=format_options) as f:
+    with pysam.AlignmentFile(args.alignments, mode='rb', threads=args.threads, format_options=format_options) as f:
 
         for aln in f:
 
-            # may be slightly faster
-            ref, mref = aln.reference_name, aln.next_reference_name
+            ref = aln.reference_name
 
             # skip contigs that not in the fasta file
             if ref not in fa_dict:
@@ -1300,9 +1346,51 @@ def parse_bam_for_correction(fa_dict, args):
     return ctg_cov_dict, ctg_link_pos_dict
 
 
-def aln_generator_for_correction_ctg(bam, threads, format_options, final_break_pos_dict, final_break_frag_dict):
+def pairs_generator_for_correction_ctg(pairs, aln_format, final_break_pos_dict, final_break_frag_dict):
 
-    # convert the coordinates of Hi-C links in the contigs that have been corrected
+    # convert the coordinates of Hi-C links in the contigs that have been corrected (when no contigs are split into bins)
+
+    def convert_ctg(ctg, coord):
+        n = 0
+        for pos in final_break_pos_dict[ctg]:
+            new_coord = coord - pos
+            if new_coord >= 0:
+                return final_break_frag_dict[ctg][n], new_coord
+            n += 1
+
+    if aln_format == 'pairs':
+        fopen = open
+    else:
+        assert aln_format == 'bgzipped_pairs'
+        fopen = gzip.open
+
+    # generate a BED file for juice pre
+    # The file is not completely accurate as some information is missing in the pairs files compared to the bam files
+    with fopen(pairs, 'rt') as f, open('alignments.bed', 'w') as fbed:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            # pysam and BED format use the 0-based coordinate system
+            ref, pos, mref, mpos = cols[1], int(cols[2]) - 1, cols[3], int(cols[4]) -1
+            fbed.write('{0}\t{1}\t{2}\t{3}/1\t255\t.\n{4}\t{5}\t{6}\t{3}/2\t255\t.\n'.format(ref, pos, pos, cols[0], mref, mpos, mpos))
+
+            if ref in final_break_frag_dict:
+                ref, pos = convert_ctg(ref, pos)
+
+            if mref in final_break_frag_dict:
+                mref, mpos = convert_ctg(mref, mpos)
+
+            if ref == mref:
+                continue
+
+            yield ref, mref, pos, mpos
+
+
+def bam_generator_for_correction_ctg(bam, threads, format_options, final_break_pos_dict, final_break_frag_dict):
+
+    # convert the coordinates of Hi-C links in the contigs that have been corrected (when no contigs are split into bins)
 
     def convert_ctg(ctg, coord):
         n = 0
@@ -1313,6 +1401,7 @@ def aln_generator_for_correction_ctg(bam, threads, format_options, final_break_p
             n += 1
 
     with pysam.AlignmentFile(bam, mode='rb', threads=threads, format_options=format_options) as f:
+
         for aln in f:
             ref, mref, pos, mpos = (
                     aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start)
@@ -1329,7 +1418,46 @@ def aln_generator_for_correction_ctg(bam, threads, format_options, final_break_p
             yield ref, mref, pos, mpos
 
 
-def aln_generator_for_correction(bam, threads, format_options, final_break_pos_dict, final_break_frag_dict):
+def pairs_generator_for_correction(pairs, aln_format, final_break_pos_dict, final_break_frag_dict):
+
+    # convert the coordinates of Hi-C links in the contigs that have been corrected
+
+    def convert_ctg(ctg, coord):
+        n = 0
+        for pos in final_break_pos_dict[ctg]:
+            new_coord = coord - pos
+            if new_coord >= 0:
+                return final_break_frag_dict[ctg][n], new_coord
+            n += 1
+
+    if aln_format == 'pairs':
+        fopen = open
+    else:
+        assert aln_format == 'bgzipped_pairs'
+        fopen = gzip.open
+
+    # generate a BED file for juice pre
+    # The file is not completely accurate as some information is missing in the pairs files compared to the bam files
+    with fopen(pairs, 'rt') as f, open('alignments.bed', 'w') as fbed:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            # pysam and BED format use the 0-based coordinate system
+            ref, pos, mref, mpos = cols[1], int(cols[2]) - 1, cols[3], int(cols[4]) - 1
+            fbed.write('{0}\t{1}\t{2}\t{3}/1\t255\t.\n{4}\t{5}\t{6}\t{3}/2\t255\t.\n'.format(ref, pos, pos, cols[0], mref, mpos, mpos))
+
+            if ref in final_break_frag_dict:
+                ref, pos = convert_ctg(ref, pos)
+
+            if mref in final_break_frag_dict:
+                mref, mpos = convert_ctg(mref, mpos)
+
+            yield ref, mref, pos, mpos
+
+
+def bam_generator_for_correction(bam, threads, format_options, final_break_pos_dict, final_break_frag_dict):
 
     # convert the coordinates of Hi-C links in the contigs that have been corrected
 
@@ -1356,7 +1484,54 @@ def aln_generator_for_correction(bam, threads, format_options, final_break_pos_d
             yield ref, mref, pos, mpos
 
 
-def aln_generator(bam, threads, format_options):
+def pairs_generator(pairs, aln_format):
+
+    if aln_format == 'pairs':
+        fopen = open
+    else:
+        assert aln_format == 'bgzipped_pairs'
+        fopen = gzip.open
+
+    # generate a BED file for juice pre
+    # The file is not completely accurate as some information is missing in the pairs files compared to the bam files
+    with fopen(pairs, 'rt') as f, open('alignments.bed', 'w') as fbed:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            # pysam and BED format use the 0-based coordinate system
+            ref, pos, mref, mpos = cols[1], int(cols[2]) - 1, cols[3], int(cols[4]) - 1
+            fbed.write('{0}\t{1}\t{2}\t{3}/1\t255\t.\n{4}\t{5}\t{6}\t{3}/2\t255\t.\n'.format(ref, pos, pos, cols[0], mref, mpos, mpos))
+
+            yield ref, mref, pos, mpos
+
+
+def pairs_generator_inter_ctgs(pairs, aln_format):
+
+    if aln_format == 'pairs':
+        fopen = open
+    else:
+        assert aln_format == 'bgzipped_pairs'
+        fopen = gzip.open
+
+    # generate a BED file for juice pre
+    # The file is not completely accurate as some information is missing in the pairs files compared to the bam files
+    with fopen(pairs, 'rt') as f, open('alignments.bed', 'w') as fbed:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            # pysam and BED format use the 0-based coordinate system
+            ref, pos, mref, mpos = cols[1], int(cols[2]) - 1, cols[3], int(cols[4]) - 1
+            fbed.write('{0}\t{1}\t{2}\t{3}/1\t255\t.\n{4}\t{5}\t{6}\t{3}/2\t255\t.\n'.format(ref, pos, pos, cols[0], mref, mpos, mpos))
+
+            if ref != mref:
+                yield ref, mref, pos, mpos
+
+
+def bam_generator(bam, threads, format_options):
 
     # just a wrapper of pysam.AlignmentFile used to keep the style of Hi-C link parsing consistent
 
@@ -1366,13 +1541,12 @@ def aln_generator(bam, threads, format_options):
             yield aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start
 
 
-def parse_bam_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set):
+def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set):
 
     """parse BAM file (when no contigs are split into bins)"""
-    logger.info('Parsing input BAM file...')
+    logger.info('Parsing input alignments...')
 
     # set default parameters
-    bam = args.bam
     # kbp -> bp
     flank = args.flank * 1000
 
@@ -1423,7 +1597,7 @@ def parse_bam_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set):
     return full_link_dict, flank_link_dict, HT_link_dict, clm_dict, ctg_link_dict, ctg_coord_dict
 
 
-def parse_bam(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set):
+def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set):
 
     """parse BAM file (when some contigs are split into bins)"""
 
@@ -1437,7 +1611,7 @@ def parse_bam(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, s
         else:
             return ctg, coord, False
 
-    logger.info('Parsing input BAM file...')
+    logger.info('Parsing input alignments...')
 
     # kbp -> bp
     flank = args.flank * 1000
@@ -1874,7 +2048,7 @@ def output_statistics(fa_dict, link_dict, result_clusters_list):
         ctg_group_dict = dict()
         group_RE_dict = dict()
 
-        for n, (ctgs, group_len) in enumerate(result_clusters):
+        for n, (ctgs, _) in enumerate(result_clusters):
             group_RE_dict[n] = 1
             for ctg in ctgs:
                 ctg_group_dict[ctg] = n
@@ -2037,6 +2211,26 @@ def check_param(param, string, suffix, true_suffix=''):
     raise RuntimeError('Parameter check failed')
 
 
+def detect_format(args):
+
+    # check file format for Hi-C read alignments
+
+    if args.alignments.endswith('.bam'):
+        args.aln_format = 'bam'
+        logger.info('The file for Hi-C read alignments is detected as being in BAM format')
+
+    elif args.alignments.endswith('.pairs'):
+        args.aln_format = 'pairs'
+        logger.info('The file for Hi-C read alignments is detected as being in pairs format')
+
+    elif args.alignments.endswith('.pairs.gz'):
+        args.aln_format = 'bgzipped_pairs'
+        logger.info('The file for Hi-C read alignments is detected as being in bgzipped pairs format')
+
+    else:
+        raise RuntimeError('Unknown file format for Hi-C read alignments')
+
+
 def parse_arguments():
 
     parser = argparse.ArgumentParser(prog='haphic cluster')
@@ -2046,9 +2240,11 @@ def parse_arguments():
     input_group.add_argument(
             'fasta', help='draft genome in FASTA format')
     input_group.add_argument(
-            'bam', help='filtered Hi-C read mapping result in BAM format, DO NOT sort it by coordinate')
+            'alignments', help='filtered Hi-C read alignments in BAM/pairs format (DO NOT sort it by coordinate)')
     input_group.add_argument(
             'nchrs', type=int, help='expected number of chromosomes')
+    input_group.add_argument(
+            '--aln_format', choices={'bam', 'pairs', 'bgzipped_pairs', 'auto'}, default='auto', help='file format for Hi-C read alignments, default: %(default)s')
     input_group.add_argument(
             '--RE', default='GATC',
             help='restriction enzyme site(s) (e.g., GATC for MboI & AAGCTT for HindIII), default: %(default)s. If more than one enzyme was used '
@@ -2250,6 +2446,10 @@ def run(args, log_file=None):
     elif args.dense_matrix:
         logger.warning('--dense_matrix is set, HapHiC will be executed in dense matrix mode')
 
+    # check file format for Hi-C read alignments
+    if args.aln_format == 'auto':
+        detect_format(args)
+
     # quick view mode
     if args.quick_view:
         args.bin_size = 0
@@ -2270,7 +2470,11 @@ def run(args, log_file=None):
 
     if args.correct_nrounds:
         # performing assembly correction
-        ctg_cov_dict, ctg_link_pos_dict = parse_bam_for_correction(fa_dict, args)
+        if args.aln_format == 'bam':
+            ctg_cov_dict, ctg_link_pos_dict = parse_bam_for_correction(fa_dict, args)
+        else:
+            assert args.aln_format in {'pairs', 'bgzipped_pairs'}
+            ctg_cov_dict, ctg_link_pos_dict = parse_pairs_for_correction(fa_dict, args)
         nbroken_ctgs, final_break_pos_dict, final_break_frag_dict  = correct_assembly(
                 ctg_cov_dict, ctg_link_pos_dict, fa_dict, read_depth_dict, args)
         del ctg_cov_dict, ctg_link_pos_dict
@@ -2289,26 +2493,40 @@ def run(args, log_file=None):
         # need all read1 Hi-C links and contig conversion
         format_options = [b'filter=flag.read1']
         if split_ctg_set:
-            alignments = aln_generator_for_correction(
-                    args.bam, args.threads, format_options, final_break_pos_dict, final_break_frag_dict)
+            if args.aln_format == 'bam':
+                alignments = bam_generator_for_correction(
+                        args.alignments, args.threads, format_options, final_break_pos_dict, final_break_frag_dict)
+            else:
+                alignments = pairs_generator_for_correction(
+                        args.alignments, args.aln_format, final_break_pos_dict, final_break_frag_dict)
         else:
-            alignments = aln_generator_for_correction_ctg(
-                    args.bam, args.threads, format_options, final_break_pos_dict, final_break_frag_dict)
+            if args.aln_format == 'bam':
+                alignments = bam_generator_for_correction_ctg(
+                        args.alignments, args.threads, format_options, final_break_pos_dict, final_break_frag_dict)
+            else:
+                alignments = pairs_generator_for_correction_ctg(
+                        args.alignments, args.aln_format, final_break_pos_dict, final_break_frag_dict)
     elif split_ctg_set:
         # need all read1 Hi-C links, but contig conversion is not necessary
-        format_options = [b'filter=flag.read1']
-        alignments = aln_generator(args.bam, args.threads, format_options)
+        if args.aln_format == 'bam':
+            format_options = [b'filter=flag.read1']
+            alignments = bam_generator(args.alignments, args.threads, format_options)
+        else:
+            alignments = pairs_generator(args.alignments, args.aln_format)
     else:
-        # need read1 intra-contig Hi-C links only, and contig conversion is not necessary
-        format_options = [b'filter=flag.read1 && refid != mrefid']
-        alignments = aln_generator(args.bam, args.threads, format_options)
+        # need read1 inter-contig Hi-C links only, and contig conversion is not necessary
+        if args.aln_format == 'bam':
+            format_options = [b'filter=flag.read1 && refid != mrefid']
+            alignments = bam_generator(args.alignments, args.threads, format_options)
+        else:
+            alignments = pairs_generator_inter_ctgs(args.alignments, args.aln_format)
 
-    # parse bam file
+    # parse alignments
     if split_ctg_set:
-        full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict, ctg_pair_to_frag = parse_bam(
+        full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict, ctg_pair_to_frag = parse_alignments(
                 alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set)
     else:
-        full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict = parse_bam_for_ctgs(
+        full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict = parse_alignments_for_ctgs(
                 alignments, fa_dict, args, frag_len_dict, Nx_frag_set)
 
     # output HT_link_dict.pkl for HapHiC sort

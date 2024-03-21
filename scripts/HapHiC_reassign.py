@@ -7,11 +7,12 @@
 
 import sys
 import os
-import subprocess
 import pickle
 import argparse
 import logging
 import time
+import pysam
+import gzip
 
 from collections import defaultdict
 from sklearn.cluster import AgglomerativeClustering
@@ -27,6 +28,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+pysam.set_verbosity(0)
 
 
 def parse_pickle(fa_dict, pickle_file):
@@ -44,7 +47,52 @@ def parse_pickle(fa_dict, pickle_file):
     return full_link_dict, sorted_ctg_list, RE_site_dict
 
 
-def parse_bam_for_reassignment(fa_dict, args, ctg_len_dict, Nx_ctg_set, logger=logger):
+def parse_pairs_for_reassignment(fa_dict, args, logger=logger):
+
+    """parse pairs file (for reassignment)"""
+    logger.info('Parsing input pairs file...')
+
+    # set default parameters
+    pairs = args.links
+
+    full_link_dict = defaultdict(int)
+
+    # a dict storing coords of Hi-C links between contigs
+    ctg_coord_dict = defaultdict(lambda: array('i'))
+
+    if pairs.endswith('.pairs'):
+        fopen = open
+    else:
+        assert pairs.endswith('.pairs.gz')
+        fopen = gzip.open
+
+    with fopen(pairs, 'rt') as f:
+
+        for line in f:
+            if not line.strip() or line.startswith('#'):
+                continue
+            cols = line.split()
+            ref, mref = cols[1], cols[3]
+
+            # skip intra-contig Hi-C links and contigs not in the fasta file
+            if ref == mref or ref not in fa_dict or mref not in fa_dict:
+                continue
+
+            # sort by contig name
+            (ctg_i, coord_i), (ctg_j, coord_j) = sorted(((ref, int(cols[2])), (mref, int(cols[4]))))
+            ctg_name_pair = (ctg_i, ctg_j)
+
+            # update full_link_dict
+            full_link_dict[ctg_name_pair] += 1
+
+            # record coord pairs and calculate concordance ratios once there are enough coord pairs
+            if args.remove_allelic_links:
+                record_coord_pairs(ctg_coord_dict, ctg_name_pair, coord_i, coord_j, args.max_read_pairs, fa_dict, args.nwindows)
+
+    return full_link_dict, ctg_coord_dict
+
+
+def parse_bam_for_reassignment(fa_dict, args, logger=logger):
 
     """parse BAM file (for reassignment)"""
     logger.info('Parsing input BAM file...')
@@ -575,7 +623,7 @@ def parse_arguments():
     input_group.add_argument(
             'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     input_group.add_argument(
-            'links', help='`full_links.pkl` generated in the clustering step (much faster) or filtered Hi-C read mapping result in BAM format (DO NOT sort it by coordinate)')
+            'links', help='`full_links.pkl` generated in the clustering step (much faster) or filtered Hi-C read alignments in BAM/pairs format (DO NOT sort it by coordinate)')
     input_group.add_argument(
             'clusters', help='`*.clusters.txt` file or `*.assembly` file')
     input_group.add_argument(
@@ -633,7 +681,7 @@ def parse_arguments():
             'the value is often set to the expected number of chromosomes to get chromosome-level scaffolds. Set the parameter to 0 to disable it, default: %(default)s')
 
     # Parameters for Hi-C link filtration
-    filter_group = parser.add_argument_group('>>> Parameters for Hi-C link filtration before clustering, work only if the input "links" file is in BAM format')
+    filter_group = parser.add_argument_group('>>> Parameters for Hi-C link filtration before clustering, work only if the input "links" file is in BAM or pairs format')
     filter_group.add_argument(
             '--remove_allelic_links', type=int, default=0,
             help='This parameter identifies allelic contig pairs and removes the Hi-C links between them, the value should be the ploidy and must be >= 2. '
@@ -669,8 +717,8 @@ def parse_arguments():
     args = parser.parse_args()
 
     # check parameters
-    if not args.links.endswith('.bam') and not args.links.endswith('.pkl'):
-        logger.error('The second positional argument "links" should end with .bam or .pkl')
+    if not (args.links.endswith('.bam') or args.links.endswith('.pkl') or args.links.endswith('.pairs') or args.links.endswith('.pairs.gz')):
+        logger.error('The second positional argument "links" should end with .bam, .pkl, .pairs, or .pairs.gz')
         raise RuntimeError('Parameter check failed')
 
     if not args.clusters.endswith('.clusters.txt') and not args.clusters.endswith('.assembly'):
@@ -719,7 +767,7 @@ def run(args, log_file=None):
             mock_group_file((fa_dict,), (total_len,), final_dir)
         else:
             hap_ctg_dict = defaultdict(set)
-            for ctg, (hap, read_depth) in read_depth_dict.items():
+            for ctg, (hap, _) in read_depth_dict.items():
                 if ctg in fa_dict:
                     hap_ctg_dict[hap].add(ctg)
             fa_dicts, total_lens = list(), list()
@@ -736,25 +784,30 @@ def run(args, log_file=None):
         logger.info('Program finished in {}s'.format(finished_time-start_time))
         return None
 
-    if args.links.endswith('.bam'):
+    if args.links.endswith('.pkl'):
+        if args.remove_allelic_links:
+            logger.info("A pickle file is input meanwhile --remove_allelic_links is set, "
+                    "allelic Hi-C links will NOT be treated specially in the reassignment step")
+        full_link_dict, sorted_ctg_list, RE_site_dict = parse_pickle(fa_dict, args.links)
 
-        stat_output = stat_fragments(fa_dict, args.RE, logger=logger)
+    else:
+
+        stat_output = stat_fragments(fa_dict, args.RE, {}, logger=logger)
         sorted_ctg_list = stat_output[0]
         RE_site_dict = stat_output[-2]
-        ctg_len_dict, Nx_ctg_set = stat_output[3:5]
 
         # parse bam
-        full_link_dict, ctg_coord_dict = parse_bam_for_reassignment(fa_dict, args, ctg_len_dict, Nx_ctg_set, logger=logger)
+        if args.links.endswith('.bam'):
+            full_link_dict, ctg_coord_dict = parse_bam_for_reassignment(fa_dict, args, logger=logger)
+        # parse pairs
+        else:
+            full_link_dict, ctg_coord_dict = parse_pairs_for_reassignment(fa_dict, args, logger=logger)
+
 
         # update full_link_dict by removing Hi-C links between alleic contig pairs
         if args.remove_allelic_links:
             remove_allelic_HiC_links(fa_dict, ctg_coord_dict, full_link_dict, args, logger=logger)
 
-    else:
-        if args.remove_allelic_links:
-            logger.info("A pickle file is input meanwhile --remove_allelic_links is set, "
-                    "allelic Hi-C links will NOT be treated specially in the reassignment step")
-        full_link_dict, sorted_ctg_list, RE_site_dict = parse_pickle(fa_dict, args.links)
 
     # parse clusters file
     if args.clusters.endswith('.clusters.txt'):

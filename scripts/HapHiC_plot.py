@@ -11,6 +11,7 @@ import pickle
 import logging
 import time
 import sys
+import gzip
 
 import pysam
 from portion import closed
@@ -21,7 +22,7 @@ from math import ceil
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib import colors, transforms
+from matplotlib import colors
 
 from _version import __version__, __update_time__
 
@@ -126,10 +127,57 @@ def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size
     contact_matrix = np.zeros((total_n_bins, total_n_bins), dtype=int)
 
     ctg_set = set()
-    for ctg, ctg_raw_start, ctg_raw_end in frag_set:
+    for ctg, _, __ in frag_set:
         ctg_set.add(ctg)
 
     return contact_matrix, group_to_total_bin_dict, group_list, ctg_set
+
+
+def parse_pairs(pairs, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set):
+
+    def convert_group_bin_id(ctg, pos):
+
+        for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
+            group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
+            if pos in ctg_raw_bin_range:
+                if group_and_bin[0] not in group_list:
+                    return None
+                return group_to_total_bin_dict[group_and_bin]
+
+    logger.info('Parsing input pairs file...')
+
+    if pairs.endswith('.pairs'):
+        fopen = open
+    else:
+        assert pairs.endswith('.pairs.gz')
+        fopen = gzip.open
+
+
+    with fopen(pairs, 'rt') as f:
+
+        for line in f:
+
+            if not line.strip() or line.startswith('#'):
+                continue
+
+            cols = line.split()
+            ref, pos, mref, mpos = cols[1], int(cols[2]), cols[3], int(cols[4])
+
+            # only consider contigs in groups with a length equal or greater than `min_len`
+            if ref not in ctg_set or mref not in ctg_set:
+                continue
+
+            ref_group_bin_id = convert_group_bin_id(ref, pos)
+            if ref_group_bin_id is None:
+                continue
+
+            mref_group_bin_id = convert_group_bin_id(mref, mpos)
+            if mref_group_bin_id is None:
+                continue
+
+            contact_matrix[ref_group_bin_id, mref_group_bin_id] += 1
+
+    return contact_matrix
 
 
 def parse_bam(bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set, threads):
@@ -137,14 +185,10 @@ def parse_bam(bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_to
     def convert_group_bin_id(ctg, pos):
 
         for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
-
             group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
-
             if pos in ctg_raw_bin_range:
-
                 if group_and_bin[0] not in group_list:
                     return None
-
                 return group_to_total_bin_dict[group_and_bin]
 
 
@@ -337,13 +381,13 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
             group_start_bin += group_bin_num
 
             # intra-scaffold KR normalization for each scaffold
-            x, res = bnewt(intra_matrix)
+            x, _ = bnewt(intra_matrix)
             d = np.diag(x)
             normalized_intra_matrix = d @ intra_matrix @ d
             normalized_intra_matrix_dict[group] = normalized_intra_matrix
 
         # inter-scaffold KR normalization
-        x, res = bnewt(contact_matrix)
+        x, _ = bnewt(contact_matrix)
         d = np.diag(x)
         normalized_inter_matrix = d @ contact_matrix @ d
 
@@ -396,7 +440,7 @@ def normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, norm
                         non_diagonal_list.append(i)
             group_start_bin += group_bin_num
 
-        if manual_vmax < 0: 
+        if manual_vmax < 0:
             vmax = np.median(non_diagonal_list) * vmax_coef
         else:
             vmax = manual_vmax
@@ -428,7 +472,6 @@ def get_xticks(length, resolution, bin_size):
     xtick_list, xtick_values = list(), list()
     for x in range(0, length+1, int(resolution * 1000000)):
         xtick_list.append(x // bin_size)
-        x_mb = x / 1000000
         xtick_values.append(x / 1000000)
 
     if any([True for v in xtick_values if v != int(v)]):
@@ -467,7 +510,6 @@ def normalized_imshow(ax, contact_matrix, cmap, vmax):
     heatmap.set_norm(norm)
 
     return heatmap
-
 
 def get_line_style(line_style):
 
@@ -565,7 +607,7 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
 
     # convert inch to cm
     fig, axes = plt.subplots(
-            ceil(len(group_list)/args.ncols), args.ncols, 
+            ceil(len(group_list)/args.ncols), args.ncols,
             figsize=(args.figure_width/2.54, ((args.figure_width-2)*ratio*1.2)/2.54), dpi=1000)
 
     ax_list = list()
@@ -605,7 +647,7 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
         cmap = get_cmap(args.cmap)
 
         # draw heatmap with normalization
-        heatmap = normalized_imshow(ax, group_matrix, cmap, vmax)
+        normalized_imshow(ax, group_matrix, cmap, vmax)
 
         ax.set_title(group, fontsize=6)
 
@@ -622,7 +664,7 @@ def parse_arguments():
     parser.add_argument(
             'agp', help='scaffolding result in AGP format. The IDs in this file should match those in the BAM file')
     parser.add_argument(
-            'bam', help='filtered Hi-C read mapping result in BAM format (slow) or previously generated `contact_matrix.pkl` (much faster)')
+            'alignments', help='filtered Hi-C read alignments in BAM/pairs format (slow) or previously generated `contact_matrix.pkl` (much faster)')
     parser.add_argument(
             '--bin_size', type=int, default=500, 
             help='bin size for generating contact matrix, default: %(default)s (kbp)')
@@ -712,16 +754,20 @@ def main():
     contact_matrix, group_to_total_bin_dict, group_list, ctg_set = generate_contact_matrix(
             group_size_dict, frag_set, group_frag_dict, bin_size, args.min_len)
 
-    if args.bam.endswith('.bam'):
-        contact_matrix = parse_bam(
-                args.bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set, args.threads)
+    if args.alignments.endswith('.pkl'):
+        contact_matrix = load_pickle(args.alignments, args)
+    else:
+        if args.alignments.endswith('.bam'):
+            contact_matrix = parse_bam(
+                    args.alignments, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set, args.threads)
+        else:
+            assert args.alignments.endswith('.pairs') or args.alignments.endswith('.pairs.gz')
+            contact_matrix = parse_pairs(
+                    args.alignments, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_total_bin_dict, group_list, ctg_set)
         contact_matrix = contact_matrix + np.transpose(contact_matrix)
         for i in range(contact_matrix.shape[0]):
             contact_matrix[i,i] /= 2
         output_pickle(contact_matrix, args)
-    else:
-        assert args.bam.endswith('.pkl')
-        contact_matrix = load_pickle(args.bam, args)
 
     normalized_contact_matrix, vmax = normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, args.normalization, args.vmax_coef, args.manual_vmax)
 

@@ -115,5 +115,5 @@ else:
     print(TITLE_DOC)
     print(HELP_DOC)
 
-    raise Exception('Bad command or parameters! Please check the help message above.')
+    raise RuntimeError('Bad command or parameters! Please check the help message above.')
 

@@ -42,9 +42,11 @@ def parse_argument():
     input_group.add_argument(
             'fasta', help='draft genome in FASTA format')
     input_group.add_argument(
-            'bam', help='filtered Hi-C read mapping result in BAM format, DO NOT sort it by coordinate')
+            'alignments', help='filtered Hi-C read alignments in BAM/pairs format (DO NOT sort it by coordinate)')
     input_group.add_argument(
             'nchrs', type=int, help='expected number of chromosomes')
+    input_group.add_argument(
+            '--aln_format', choices={'bam', 'pairs', 'bgzipped_pairs', 'auto'}, default='auto', help='file format for Hi-C read alignments, default: %(default)s')
     input_group.add_argument(
             '--gfa', default=None,
             help='(experimental) matched GFA file(s) of the phased hifiasm assembly, separated with commas (e.g., `--gfa "gfa1,gfa2"`), default: %(default)s. '
@@ -388,7 +390,7 @@ def haphic_sort(args):
     logger.info('Step3: Order and orient contigs within each group...')
 
     DIR = '03.sort'
-    LOG_FILE = 'HapHiC_sort.log'
+    # LOG_FILE = 'HapHiC_sort.log'
     os.mkdir(DIR)
     os.chdir(DIR)
 
@@ -434,6 +436,9 @@ def haphic_build(args):
     os.mkdir(DIR)
     os.chdir(DIR)
 
+    if args.alignments.endswith('.pairs') or args.alignments.endswith('.pairs.gz'):
+        args.alignments = '../01.cluster/alignments.bed'
+
     HapHiC_build.run(args, log_file=LOG_FILE)
 
     os.chdir('..')
@@ -456,12 +461,12 @@ def main():
     # modify args to make them compatible across scripts
     args.fasta = abspath(args.fasta)
     args.raw_fasta = args.fasta
-    args.bam = abspath(args.bam)
+    args.alignments = abspath(args.alignments)
     if args.gfa:
         args.gfa = ','.join([abspath(gfa) for gfa in args.gfa.split(',')])
 
     # Step1: Cluster contigs into groups
-    inflation = haphic_cluster(args)
+    haphic_cluster(args)
 
     # Step2: Reassign and rescue contigs
     if 2 in steps:

@@ -94,9 +94,6 @@ def parse_group(group_file, clm_dir, quick_view):
         raise IOError('Clm file check failed: CANNOT find corresponding clm file '
                 'in {} for group file {}'.format(clm_dir, group_file))
 
-    ctg_group_dict = dict()
-    group_ctg_dict = defaultdict(set)
-
     ctgs = list()
 
     with open(group_file) as f:
@@ -242,7 +239,7 @@ def get_unfiltered_confidence_graph(shape, index_pairs, sub_HT_dict, density_gra
     return confidence_graph, maxs
 
 
-def filter_confidence_graph(confidence_graph, sub_HT_dict, maxs, confidence_cutoff):
+def filter_confidence_graph(confidence_graph, sub_HT_dict, confidence_cutoff):
 
     # Only confidence greater than 1 is reliable otherwise unreliable.
     # I also tried to use the confidence <= 1 to link at least a pair of
@@ -457,7 +454,6 @@ def remove_shortest_path(index_pairs, sub_HT_dict, density_graph):
     shortest_i_1, shortest_i_2 = index_pairs.pop(-1)
 
     # update sub_HT_dict
-    new_sub_HT_dict = defaultdict(int)
     for i_1, i_2 in sub_HT_dict.copy():
         if i_1 in {shortest_i_1, shortest_i_2} or i_2 in {shortest_i_1, shortest_i_2}:
             sub_HT_dict.pop((i_1, i_2))
@@ -466,7 +462,7 @@ def remove_shortest_path(index_pairs, sub_HT_dict, density_graph):
     return density_graph[:-2,:-2]
 
 
-def fast_sort(args, fa_dict, group_specific_data, group, prefix):
+def fast_sort(args, fa_dict, group_specific_data, prefix):
 
     logger.info('[{}] Performing fast sorting...'.format(prefix))
 
@@ -563,7 +559,7 @@ def fast_sort(args, fa_dict, group_specific_data, group, prefix):
         skip_density_graph_construction = False
 
         # filter confidence graph
-        filter_confidence_graph(confidence_graph, sub_HT_dict, maxs, args.confidence_cutoff)
+        filter_confidence_graph(confidence_graph, sub_HT_dict, args.confidence_cutoff)
 
         # use Kruskal's algorithm to construct a maximal spanning forest
         forest = nxtree.maximum_spanning_tree(Graph(confidence_graph), algorithm='kruskal')
@@ -650,7 +646,7 @@ def run_haphic_sorting(args, group, fa_dict, group_specific_data, group_param, a
     if not args.skip_fast_sort:
 
         # fast sort contigs before ALLHiC optimization
-        output_path_list, only_one_contig = fast_sort(args, fa_dict, group_specific_data, group, prefix)
+        output_path_list, only_one_contig = fast_sort(args, fa_dict, group_specific_data, prefix)
 
         # output .tour file
         output_tour_file(output_path_list, prefix)

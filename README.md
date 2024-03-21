@@ -19,7 +19,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
-* Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used [chromap](https://github.com/haowenz/chromap)
+* Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap)
 * Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
 * Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp`  for compatibility with the Juicebox visualization method suggested by YaHS.
 

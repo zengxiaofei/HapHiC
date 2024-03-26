@@ -189,10 +189,10 @@ def summarize(summary_intra_dict, summary_inter_dict, haphic_bin_index_dict, hap
     yahs_intra_nlinks = 0
     # intra-scaffold Hi-C links
     for bin_dist in summary_intra_dict:
-        truth_nlinks_list = summary_intra_dict[bin_dist]['Truth']
-        haphic_nlinks_list = summary_intra_dict[bin_dist]['HapHiC']
-        haphic_fastsort_nlinks_list = summary_intra_dict[bin_dist]['HapHiC_fastsort']
-        yahs_nlinks_list = summary_intra_dict[bin_dist]['YaHS']
+        truth_nlinks_list = summary_intra_dict[bin_dist]['Truth'] if 'Truth' in summary_intra_dict[bin_dist] else []
+        haphic_nlinks_list = summary_intra_dict[bin_dist]['HapHiC'] if 'HapHiC' in summary_intra_dict[bin_dist] else []
+        haphic_fastsort_nlinks_list = summary_intra_dict[bin_dist]['HapHiC_fastsort'] if 'HapHiC_fastsort' in summary_intra_dict[bin_dist] else []
+        yahs_nlinks_list = summary_intra_dict[bin_dist]['YaHS'] if 'YaHS' in summary_intra_dict[bin_dist] else []
         
         haphic_intra_nlinks += sum(haphic_nlinks_list)
         haphic_fastsort_intra_nlinks += sum(haphic_fastsort_nlinks_list)

@@ -19,7 +19,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
-* Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap)
+* Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap).
 * Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
 * Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp` for compatibility with the Juicebox visualization method suggested by YaHS.
 
@@ -38,7 +38,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
   * [[Step 2] Reassignment](#step2)
   * [[Step 3] Ordering and orientation](#step3)
   * [[Step 4] Building pseudomolecules](#step4)
-- [Work with hifiasm (experimental)](#hifiasm)
+- [Work with hifiasm](#hifiasm)
 - [Quick view mode](#quick_view)
 - [Juicebox curation](#juicebox)
 - [Visualization](#visualization)
@@ -263,7 +263,7 @@ For more information, run `haphic build --help`.
 
 
 
-## <span id="hifiasm">Work with hifiasm (experimental)</span>
+## <span id="hifiasm">Work with hifiasm</span>
 
 When scaffolding a phased [hifiasm](https://github.com/chhylp123/hifiasm) assembly, you can run HapHiC with the GFA file(s) output by hifiasm. Here, the term "phased hifiasm assembly" refers to the haplotype-resolved primary contigs assembled via the trio binning or Hi-C-based algorithm (`*.hap*.p_ctg.gfa`), as well as the phased unitigs (`*.p_utg.gfa`). 
 

@@ -113,18 +113,21 @@ def evaluate(scaffold_dict, scaffold_nctgs_dict, truth_dict, ctg_info_dict):
         return len(ctgs), length
     
     # get lengths for source scaffolds
+    white_list = []
     source_scaffold_len_dict = dict()
     for ID, ctg_list in truth_dict.items():
         source_scaffold_len_dict[ID] = 0
         for ctg, _ in ctg_list:
             source_scaffold_len_dict[ID] += ctg_info_dict[ctg][-1]
+        if ID != 'unanchored' and len(ctg_list) == 1:
+            white_list.append(ctg_list[0][0])
     
     unanchored_list = []
     newly_anchored_list = []
     scaffold_stat_dict = dict()
     for scaffold, source_scaffold_dict in scaffold_dict.items():
         # not anchored (nctgs < 2)
-        if scaffold_nctgs_dict[scaffold] < 2:
+        if scaffold_nctgs_dict[scaffold] < 2 and list(source_scaffold_dict.values())[0][0][0] not in white_list:
             assert scaffold_nctgs_dict[scaffold] == 1
             unanchored_list.append(list(source_scaffold_dict.values())[0][0][0])
             continue
@@ -175,7 +178,7 @@ def evaluate(scaffold_dict, scaffold_nctgs_dict, truth_dict, ctg_info_dict):
 
     for scaffold, source_scaffold_dict in scaffold_dict.items():
         # unanchored
-        if scaffold_nctgs_dict[scaffold] < 2:
+        if scaffold_nctgs_dict[scaffold] < 2 and list(source_scaffold_dict.values())[0][0][0] not in white_list:
             continue
         for source_scaffold, ctg_list in source_scaffold_dict.items():
             # translocations
@@ -290,7 +293,7 @@ def evaluate(scaffold_dict, scaffold_nctgs_dict, truth_dict, ctg_info_dict):
     inversion_and_relocation_ctg_num, inversion_and_relocation_ctg_len = ctg_stat(inversion_and_relocation_list)
 
     print('\n###### summary ######')
-    print('Number of scaffolds (at least two contigs):\n {} scaffolds'.format(len([scaffold for scaffold, nctgs in scaffold_nctgs_dict.items() if nctgs > 1])))
+    print('Number of scaffolds (at least two contigs):\n {} scaffolds'.format(len([scaffold for scaffold, nctgs in scaffold_nctgs_dict.items() if nctgs > 1 or (nctgs == 1 and list(scaffold_dict[scaffold].values())[0][0][0] in white_list)])))
     print('Total contigs:\n {} / {} bp'.format(total_ctg_num, total_ctg_len))
     print('Syntenic contigs:\n {} / {} bp / {} %'.format(syntenic_ctg_num, syntenic_ctg_len, syntenic_ctg_len/total_ctg_len*100))
     print('Unanchored contigs:\n {} / {} bp / {} %'.format(unanchored_ctg_num, unanchored_ctg_len, unanchored_ctg_len/total_ctg_len*100))

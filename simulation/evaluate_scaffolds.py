@@ -264,6 +264,11 @@ def evaluate(scaffold_dict, scaffold_nctgs_dict, truth_dict, ctg_info_dict):
                     if ctg not in lis_ctg_list and ctg not in relocation_list:
                         inversion_list.append(ctg)
 
+                # re-identify relocation
+                re_identified_relocation_set = set(lis_ctg_list) - set(new_lis_ctg_list)
+                relocation_list.extend(list(re_identified_relocation_set))
+                syntenic_list = [ctg for ctg in syntenic_list if ctg not in re_identified_relocation_set]
+
                 # identify contigs that need both inversion and translocation
                 for ctg, order in all_inversion_list:
                     if ctg not in inversion_list:

@@ -35,7 +35,7 @@ def parse_tours(tour_files, fa_dict):
 
     for tour_file in tour_files:
         basename = os.path.basename(tour_file)
-        group = os.path.splitext(basename)[0].split('_')[0]
+        group = os.path.splitext(basename)[0].rsplit('_', 1)[0]
         tour_dict[group] = list()
         last_line  = ''
         with open(tour_file) as f:

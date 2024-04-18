@@ -255,7 +255,7 @@ def parse_link_dict(link_dict, ctg_group_dict, normalize_by_nlinks=False):
 
 
 def run_reassignment(
-        sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict, fa_dict, RE_site_dict,
+        sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict, fa_dict, RE_site_dict, gfa,
         group_RE_dict, max_ctg_len, min_RE_sites, min_links, min_link_density, min_density_ratio, ambiguous_cutoff, min_group_len, nround):
 
     def update(ctg, max_group):
@@ -359,9 +359,19 @@ def run_reassignment(
                     filtered = True
                 else:
                     # calculate the average link density to other nonbest groups
-                    other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:]])
+                    # other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:]])
+                    
+                    # a patch for gfa file
+                    if gfa:
+                        other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:] if links])
+                    else:
+                        other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:]])
+                    
                     if other_group_density_sum:
-                        avg_other_group_density = other_group_density_sum / (len(group_RE_dict) - 1)
+                        if gfa:
+                            avg_other_group_density = other_group_density_sum / len([group for group, links in sorted_group_links[1:] if links])
+                        else:
+                            avg_other_group_density = other_group_density_sum / (len(group_RE_dict) - 1)
                     else:
                         # assign a big number to prevent division by zero problem
                         avg_other_group_density = 1000000000
@@ -474,8 +484,7 @@ def agglomerative_hierarchical_clustering(full_link_dict, grouped_ctgs, new_ctg_
     # construct a Hi-C linking matrix between clusters
     group_link_dict = defaultdict(int)
 
-    for ctg_name_pair, links in full_link_dict.items():
-        ctg_i, ctg_j = ctg_name_pair
+    for (ctg_i, ctg_j), links in full_link_dict.items():
         if ctg_i not in grouped_ctgs or ctg_j not in grouped_ctgs:
             continue
         if ctg_i not in new_ctg_group_dict or ctg_j not in new_ctg_group_dict:
@@ -506,13 +515,16 @@ def agglomerative_hierarchical_clustering(full_link_dict, grouped_ctgs, new_ctg_
             group_RE_sites_i = group_hiconf_RE_dict[new_old_group_dict[group_i]]
             group_RE_sites_j = group_hiconf_RE_dict[new_old_group_dict[group_j]]
             if normalize_by_nlinks:
-                link_density = links / (group_group_link_dict[group_i] * group_group_link_dict[group_j]) ** 0.5
+                link_density = links / (group_group_link_dict[group_i] * group_group_link_dict[group_j])
             else:
                 link_density = links / (group_RE_sites_i * group_RE_sites_j)
             max_link_density = max(max_link_density, link_density)
             group_link_dict[group_name_pair] = link_density
             f.write('{}\t{}\t{}\t{}\n'.format(group_i, group_j, links, link_density))
 
+    for (group_i, group_j), links in group_link_dict.items():
+        print(group_i, group_j, links)
+    
     # convert group_link_dict to a matrix for agglomerative hierarchical clustering
     group_link_matrix, group_index_dict = dict_to_matrix(group_link_dict, set(new_old_group_dict.keys()))
     index_group_dict = {i : g for g, i in group_index_dict.items()}
@@ -679,6 +691,9 @@ def parse_arguments():
             '--nclusters', type=int, default=0,
             help='perform additional agglomerative hierarchical clustering to concatenate clusters after reassignment and rescue, '
             'the value is often set to the expected number of chromosomes to get chromosome-level scaffolds. Set the parameter to 0 to disable it, default: %(default)s')
+    reassign_group.add_argument(
+        '--no_additional_rescue', default=False, action='store_true',
+        help='do not run the additional round of rescue, default: %(default)s')
 
     # Parameters for Hi-C link filtration
     filter_group = parser.add_argument_group('>>> Parameters for Hi-C link filtration before clustering, work only if the input "links" file is in BAM or pairs format')
@@ -827,18 +842,19 @@ def run(args, log_file=None):
     for n in range(args.reassign_nrounds):
         run_reassignment(
                 sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict,
-                fa_dict, RE_site_dict, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
+                fa_dict, RE_site_dict, args.gfa, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
                 args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, n+1)
         if n > 0 and last_round == ctg_group_dict:
             logger.info('[result::round{}] Result has converged after {} rounds of reassignment, break'.format(n+1, n))
             break
         last_round = ctg_group_dict.copy()
 
-    # additional rescue round
-    run_reassignment(
-            sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict,
-            fa_dict, RE_site_dict, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
-            args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, 0)
+    if not args.no_additional_rescue:
+        # additional rescue round
+        run_reassignment(
+                sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict,
+                fa_dict, RE_site_dict, args.gfa, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
+                args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, 0)
 
     # cluster output
     os.mkdir('reassigned_groups')

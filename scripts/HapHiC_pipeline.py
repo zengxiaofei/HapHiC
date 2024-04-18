@@ -233,6 +233,9 @@ def parse_argument():
     reassign_group.add_argument(
             '--reassign_nrounds', type=int, default=5,
             help='maximum number of rounds for reassignment, default: %(default)s. If the result converges, the iterations will be interrupted')
+    reassign_group.add_argument(
+            '--no_additional_rescue', default=False, action='store_true',
+            help='do not run the additional round of rescue, default: %(default)s')
 
     # Parameters for fast sorting
     fast_sort_group = parser.add_argument_group('>>> Parameters for fast sorting')

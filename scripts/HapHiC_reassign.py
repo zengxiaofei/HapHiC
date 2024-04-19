@@ -522,8 +522,8 @@ def agglomerative_hierarchical_clustering(full_link_dict, grouped_ctgs, new_ctg_
             group_link_dict[group_name_pair] = link_density
             f.write('{}\t{}\t{}\t{}\n'.format(group_i, group_j, links, link_density))
 
-    for (group_i, group_j), links in group_link_dict.items():
-        print(group_i, group_j, links)
+    # for (group_i, group_j), links in group_link_dict.items():
+    #     print(group_i, group_j, links)
     
     # convert group_link_dict to a matrix for agglomerative hierarchical clustering
     group_link_matrix, group_index_dict = dict_to_matrix(group_link_dict, set(new_old_group_dict.keys()))

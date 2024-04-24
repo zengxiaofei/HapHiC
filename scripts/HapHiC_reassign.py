@@ -256,7 +256,7 @@ def parse_link_dict(link_dict, ctg_group_dict, normalize_by_nlinks=False):
 
 def run_reassignment(
         sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict, fa_dict, RE_site_dict, gfa,
-        group_RE_dict, max_ctg_len, min_RE_sites, min_links, min_link_density, min_density_ratio, ambiguous_cutoff, min_group_len, nround):
+        group_RE_dict, max_ctg_len, min_RE_sites, min_links, min_link_density, min_density_ratio, ambiguous_cutoff, min_group_len, whitelist, nround):
 
     def update(ctg, max_group):
 
@@ -323,7 +323,7 @@ def run_reassignment(
         filtered = False
 
         # filter RE_site
-        if RE_site_dict[ctg] - 1 < min_RE_sites or not group_links:
+        if (RE_site_dict[ctg] - 1 < min_RE_sites and ctg not in whitelist) or not group_links:
             max_group, max_links = 'ungrouped', 0
             logger.debug('[reassignment::{}] Contig {} is not rescued (too few RE sites, {})'.format(round_name, ctg, former_group))
             result_dict['not_rescued'] += 1
@@ -336,14 +336,14 @@ def run_reassignment(
             else:
                 second_links = 0
             # filter max_links
-            if max_links < min_links:
+            if max_links < min_links and ctg not in whitelist:
                 max_group, max_links = 'ungrouped', 0
                 logger.debug('[reassignment::{}] Contig {} is not rescued (too few Hi-C links, {})'.format(round_name, ctg, former_group))
                 result_dict['not_rescued'] += 1
                 filtered = True
             # we define contigs with second_links / max_links >= ambiguous_cutoff as ambiguous,
             # these contigs will NOT be reassigned, but only rescued in the additional round of rescue
-            elif nround and second_links / max_links >= ambiguous_cutoff:
+            elif nround and second_links / max_links >= ambiguous_cutoff and ctg not in whitelist:
                 max_group, max_links = 'ungrouped', 0
                 logger.debug('[reassignment::{}] Contig {} is not rescued (ambiguous, {})'.format(round_name, ctg, former_group))
                 result_dict['not_rescued'] += 1
@@ -352,7 +352,7 @@ def run_reassignment(
                 # calculate link densities
                 max_link_density = cal_link_density(ctg, max_group, former_group, max_links)
                 # filter max_link_density
-                if max_link_density < min_link_density:
+                if max_link_density < min_link_density and ctg not in whitelist:
                     max_group, max_links = 'ungrouped', 0
                     logger.debug('[reassignment::{}] Contig {} is not rescued (too low Hi-C links density, {})'.format(round_name, ctg, former_group))
                     result_dict['not_rescued'] += 1
@@ -360,13 +360,13 @@ def run_reassignment(
                 else:
                     # calculate the average link density to other nonbest groups
                     # other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:]])
-                    
+
                     # a patch for gfa file
                     if gfa:
                         other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:] if links])
                     else:
                         other_group_density_sum = sum([cal_link_density(ctg, group, former_group, links) for group, links in sorted_group_links[1:]])
-                    
+
                     if other_group_density_sum:
                         if gfa:
                             avg_other_group_density = other_group_density_sum / len([group for group, links in sorted_group_links[1:] if links])
@@ -524,7 +524,7 @@ def agglomerative_hierarchical_clustering(full_link_dict, grouped_ctgs, new_ctg_
 
     # for (group_i, group_j), links in group_link_dict.items():
     #     print(group_i, group_j, links)
-    
+
     # convert group_link_dict to a matrix for agglomerative hierarchical clustering
     group_link_matrix, group_index_dict = dict_to_matrix(group_link_dict, set(new_old_group_dict.keys()))
     index_group_dict = {i : g for g, i in group_index_dict.items()}
@@ -807,7 +807,7 @@ def run(args, log_file=None):
 
     else:
 
-        stat_output = stat_fragments(fa_dict, args.RE, {}, logger=logger)
+        stat_output = stat_fragments(fa_dict, args.RE, {}, set(), logger=logger)
         sorted_ctg_list = stat_output[0]
         RE_site_dict = stat_output[-2]
 
@@ -839,11 +839,16 @@ def run(args, log_file=None):
     preparation_time = time.time()
     logger.info('File parsing and data preparation finished in {}s'.format(preparation_time-start_time))
 
+    if 'whitelist' in args:
+        whitelist = args.whitelist
+    else:
+        whitelist = set()
+
     for n in range(args.reassign_nrounds):
         run_reassignment(
                 sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict,
                 fa_dict, RE_site_dict, args.gfa, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
-                args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, n+1)
+                args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, whitelist, n+1)
         if n > 0 and last_round == ctg_group_dict:
             logger.info('[result::round{}] Result has converged after {} rounds of reassignment, break'.format(n+1, n))
             break
@@ -854,7 +859,7 @@ def run(args, log_file=None):
         run_reassignment(
                 sorted_ctg_list, ctg_group_link_dict, ctg_group_dict, full_link_dict, linked_ctg_dict,
                 fa_dict, RE_site_dict, args.gfa, group_RE_dict, args.max_ctg_len, args.min_RE_sites, args.min_links,
-                args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, 0)
+                args.min_link_density, args.min_density_ratio, args.ambiguous_cutoff, args.min_group_len, whitelist, 0)
 
     # cluster output
     os.mkdir('reassigned_groups')

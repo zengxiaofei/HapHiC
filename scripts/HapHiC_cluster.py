@@ -12,6 +12,7 @@ import logging
 import time
 import gc
 
+from copy import deepcopy
 import pysam
 import pickle
 from collections import defaultdict, OrderedDict
@@ -30,7 +31,7 @@ from scipy.sparse import coo_matrix, dok_matrix, csc_matrix
 from scipy.stats import mode
 from scipy.optimize import linear_sum_assignment
 from sklearn.preprocessing import normalize
-from networkx import Graph, find_cliques
+from networkx import Graph, find_cliques, connected_components, shortest_path
 from decimal import Decimal
 
 from _version import __version__, __update_time__
@@ -150,7 +151,7 @@ def parse_gfa(gfa_list, fa_dict, logger=logger):
     return read_depth_dict
 
 
-def stat_fragments(fa_dict, RE, read_depth_dict, nchrs=0, flank=0, Nx=100, bin_size=0, logger=logger):
+def stat_fragments(fa_dict, RE, read_depth_dict, whitelist, nchrs=0, flank=0, Nx=100, bin_size=0, logger=logger):
 
     """basic statistics for fragments (contigs / bins)"""
 
@@ -192,7 +193,6 @@ def stat_fragments(fa_dict, RE, read_depth_dict, nchrs=0, flank=0, Nx=100, bin_s
 
     for ctg, (seq, ctg_len, RE_sites) in fa_dict.items():
         # contigs are split into bins
-        # if ctg_len > bin_size * 1.5:
         if ctg_len > bin_size:
             split_ctg_set.add(ctg)
             nbins = ceil(ctg_len / bin_size)
@@ -253,6 +253,11 @@ def stat_fragments(fa_dict, RE, read_depth_dict, nchrs=0, flank=0, Nx=100, bin_s
         # add one more fragment to make len_sum/total*100 >= Nx
         Nx_frag_set.add(sorted_frag_list[len(Nx_frag_set)][0])
 
+    # add fragments in whitelist
+    if whitelist:
+        for frag, _ in sorted_frag_list:
+            if frag.rsplit('_bin', 1)[0] in whitelist:
+                Nx_frag_set.add(frag)
 
     return sorted_frag_list, bin_set, bin_size, frag_len_dict, Nx_frag_set, RE_site_dict, split_ctg_set
 
@@ -701,10 +706,11 @@ def normalize_by_length(flank_link_dict, frag_len_dict, flank):
 
 def filter_fragments(
         Nx_frag_set, RE_site_dict, RE_site_cutoff, frag_link_dict, density_lower, density_upper,
-        topN, rank_sum_upper, rank_sum_hard_cutoff, flank_link_dict, read_depth_dict, read_depth_upper):
+        topN, rank_sum_upper, rank_sum_hard_cutoff, flank_link_dict, read_depth_dict, read_depth_upper, whitelist):
 
     logger.info('Filtering fragments...')
 
+    frags_in_whitelist = set()
     frag_density_list = list()
 
     total_links = 0
@@ -721,6 +727,8 @@ def filter_fragments(
                 frag_density_list.append((frag, frag_links/RE_sites))
             else:
                 frag_density_list.append((frag, 0))
+        if whitelist and frag.rsplit('_bin', 1)[0] in whitelist:
+            frags_in_whitelist.add(frag)
 
     Nx_frag_num = len(Nx_frag_set)
 
@@ -883,6 +891,17 @@ def filter_fragments(
 
     for frag, rank_sum in rank_sum_list[upper:]:
         logger.debug('[rank sum filtering] Fragment {} is removed, rank sum={}'.format(frag, rank_sum))
+
+    if frags_in_whitelist:
+        n = 0
+        for frag in frags_in_whitelist:
+            if frag in filtered_frags:
+                continue
+            n += 1
+            logger.debug('[rank sum filtering] Fragment {} is added since it is on the whitelist'.format(frag))
+            filtered_frags.add(frag)
+        logger.info('[rank sum filtering] {} fragments added, {} fragments are used to perform Markov clustering'.format(
+            n, len(filtered_frags)))
 
     return filtered_frags
 
@@ -1543,7 +1562,7 @@ def bam_generator(bam, threads, format_options):
 
 def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set):
 
-    """parse BAM file (when no contigs are split into bins)"""
+    """parse alignments (when no contigs are split into bins)"""
     logger.info('Parsing input alignments...')
 
     # set default parameters
@@ -1599,7 +1618,7 @@ def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_se
 
 def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set):
 
-    """parse BAM file (when some contigs are split into bins)"""
+    """parse alignments (when some contigs are split into bins)"""
 
     def convert_frags(ctg, coord):
 
@@ -1686,6 +1705,211 @@ def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag
                 record_coord_pairs(ctg_coord_dict, ctg_name_pair, coord_i, coord_j, args.max_read_pairs, fa_dict, args)
 
     return full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict, ctg_pair_to_frag
+
+
+def add_edge(graph, node1, node2):
+
+    if not graph.has_edge(node1, node2):
+        graph.add_edge(node1, node2, weight=1)
+    else:
+        graph[node1][node2]['weight'] += 1
+
+
+def parse_ul_alignments(args):
+
+    """parse ultra-long alignments"""
+
+    logger.info('Parsing input ultra-long alignments...')
+
+    G_HT = Graph()
+
+    def parse_supplementary_aln_list(primary_aln, supplementary_aln_list, f):
+
+        # get the best supplementary alignment based on the AS tag (score)
+        if len(supplementary_aln_list) > 1:
+            supplementary_aln_list.sort(key=lambda x: x.get_tag('AS'), reverse=True)
+        supplementary_aln = supplementary_aln_list[0]
+
+        # link semi-contigs using UL reads
+        semi_ctg_list = [[(primary_aln, '_H'), (primary_aln, '_T')], [(supplementary_aln, '_H'), (supplementary_aln, '_T')]]
+
+        # get the adjacent semi-contigs of different contigs
+        if primary_aln.is_reverse:
+            semi_ctg_list[0].reverse()
+        if supplementary_aln.is_reverse:
+            semi_ctg_list[1].reverse()
+        semi_ctg_list.sort(key=lambda x: x[0][0].query_alignment_start, reverse=primary_aln.is_reverse)
+        left_semi_ctg = semi_ctg_list[0][1][0].reference_name + semi_ctg_list[0][1][1]
+        right_semi_ctg = semi_ctg_list[1][0][0].reference_name + semi_ctg_list[1][0][1]
+
+        # add edges for semi-contigs of different contigs
+        add_edge(G_HT, left_semi_ctg, right_semi_ctg)
+        # to avoid breaking inside a contig, the edge weight within a contig should always be equal to or greater than the edge weight between different contigs
+        add_edge(G_HT, primary_aln.reference_name+'_H',  primary_aln.reference_name+'_T')
+        add_edge(G_HT, supplementary_aln.reference_name+'_H',  supplementary_aln.reference_name+'_T')
+
+    min_ul_mapq = args.min_ul_mapq
+    min_ul_alignment_length = args.min_ul_alignment_length
+    max_distance_to_end = args.max_distance_to_end
+    max_overlap_ratio = args.max_overlap_ratio
+    max_gap_len = args.max_gap_len
+    min_ul_support = args.min_ul_support
+
+    primary_set = {0, 16}
+    primary_aln = None
+    supplementary_aln_list = []
+
+    with pysam.AlignmentFile(args.ul, 'rb', format_options=[b'filter=!flag.unmap'], threads=args.threads) as f:
+        for aln in f:
+            # MAPQ and alignment length filtering
+            if aln.mapq < min_ul_mapq or aln.reference_length < min_ul_alignment_length:
+                continue
+            # the alignment should be close to at least one of the end of the reference
+            if aln.reference_start > max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end > max_distance_to_end:
+                continue
+            # if the alignment is close to both ends of the reference, the alignment should be far away from the ends of the query
+            if aln.reference_start <= max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end <= max_distance_to_end:
+                if aln.query_alignment_start <= max_distance_to_end or aln.infer_read_length() - aln.query_alignment_end <= max_distance_to_end:
+                    continue
+
+            # for primary alignments
+            if aln.flag in primary_set:
+                if supplementary_aln_list:
+                    parse_supplementary_aln_list(primary_aln, supplementary_aln_list, f)
+                primary_aln = aln
+                supplementary_aln_list.clear()
+            # for supplementary alignments
+            elif aln.is_supplementary and primary_aln and aln.query_name == primary_aln.query_name and aln.reference_name != primary_aln.reference_name:
+                # read alignment interval filtering
+                primary_read_interval = closed(primary_aln.query_alignment_start + 1, primary_aln.query_alignment_end)
+                supplementary_read_interval = closed(aln.query_alignment_start + 1, aln.query_alignment_end)
+                overlap = primary_read_interval & supplementary_read_interval
+                # if there is a overlap in read intervals between primary and supplementary alignments
+                if overlap:
+                    overlap_len = overlap.upper - overlap.lower + 1
+                    primary_interval_len = primary_read_interval.upper - primary_read_interval.lower + 1
+                    supplementary_interval_len = supplementary_read_interval.upper - supplementary_read_interval.lower + 1
+                    # the ratio of overlap length to the shorter one of primary and supplementary intervals should <= max_overlap_ratio
+                    if overlap_len / min(primary_interval_len, supplementary_interval_len) > max_overlap_ratio:
+                        continue
+                # if there is no overlap, the gap between primary and supplementary intervals should <= max_gap_len
+                else:
+                    gap = (primary_read_interval | supplementary_read_interval).complement()[1]
+                    if gap.upper - gap.lower + 1 > max_gap_len:
+                        continue
+                supplementary_aln_list.append(aln)
+
+        # the last alignment
+        if supplementary_aln_list:
+            parse_supplementary_aln_list(primary_aln, supplementary_aln_list, f)
+
+        ## get the contig linking path
+        # remove edges with a weight less than min_ul_support
+        for node1, node2, d in deepcopy(G_HT).edges(data=True):
+            if d['weight'] < min_ul_support and node1.rsplit('_', 0) != node2.rsplit('_', 0):
+                G_HT.remove_edge(node1, node2)
+
+        # remove edges linked to a node with degree > 2
+        G_HT_copy = deepcopy(G_HT)
+        for node1, node2 in G_HT_copy.edges():
+            if (G_HT_copy.degree(node1) > 2 or G_HT_copy.degree(node2) > 2) and node1.rsplit('_', 0) != node2.rsplit('_', 0):
+                G_HT.remove_edge(node1, node2)
+
+        # find connected subgraphs
+        path_list = []
+        connected_subgraphs = connected_components(G_HT)
+        for subnodes in connected_subgraphs:
+            # link at least two contigs
+            if len(subnodes) < 4:
+                continue
+            print([(node, G_HT.degree(node)) for node in subnodes])
+            assert len(subnodes) % 2 == 0
+            subgraph = G_HT.subgraph(subnodes).copy()
+            degree_list = [subgraph.degree(node) for node in subnodes]
+            # linear
+            if degree_list.count(1) == 2:
+                node1, node2 = [node for node in subnodes if subgraph.degree(node) == 1]
+            # circular
+            else:
+                assert degree_list.count(1) == 0 and degree_list.count(2) == len(degree_list)
+                # break the edge of minimum weight
+                weight_list = [(node1, node2, G_HT[node1][node2]['weight']) for node1, node2 in subgraph.edges()]
+                weight_list.sort(key=lambda x: x[2])
+                node1, node2, _ = weight_list[0]
+                subgraph.remove_edge(node1, node2)
+            path = shortest_path(subgraph)[node1][node2]
+            path_list.append(path)
+            print('->'.join(path),'-'.join([str(f.get_reference_length(node.rsplit('_', 1)[0])//2) for node in path]))
+
+    return path_list
+
+
+def add_HT_links_based_on_ul(path_list, HT_link_dict):
+
+    for path in path_list:
+        for i in range(len(path) - 1):
+            if i % 2 != 0:
+                # get linked semi-contigs between different contigs
+                node1, node2 = path[i], path[i+1]
+
+                # get corresponding contig names
+                ctg1 = node1.rsplit('_', 1)[0]
+                ctg2 = node2.rsplit('_', 1)[0]
+
+                # sort by contig name
+                (ctg1, node1), (ctg2, node2) = sorted(((ctg1, node1), (ctg2, node2))) 
+
+                # update HT_link_dict
+                assert (node2, node1) not in HT_link_dict
+                if (node1, node2) in HT_link_dict:
+                    print('update HT_link_dict: {} {}'.format(node1, node2))
+                    HT_link_dict[(node1, node2)] *= 2
+                else:
+                    print('{} {} not in HT_link_dict'.format(node1, node2))
+
+
+def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_dict, bin_set):
+
+    ul_linked_ctg_pairs = set()
+    for path in path_list:
+        for i in range(len(path) - 1):
+            if i % 2 != 0:
+                # get linked semi-contigs between different contigs
+                node1, node2 = path[i], path[i+1]
+
+                # get corresponding contig names
+                ctg1 = node1.rsplit('_', 1)[0]
+                ctg2 = node2.rsplit('_', 1)[0]
+                ul_linked_ctg_pairs.add((ctg1, ctg2))
+                ul_linked_ctg_pairs.add((ctg2, ctg1))
+
+                # sort by contig name
+                (ctg1, node1), (ctg2, node2) = sorted(((ctg1, node1), (ctg2, node2))) 
+
+                # update full_link_dict
+                assert (ctg2, ctg1) not in full_link_dict
+                if (ctg1, ctg2) in full_link_dict:
+                    print('update full_link_dict: {} {}'.format(ctg1, ctg2))
+                    full_link_dict[(ctg1, ctg2)] *= 2
+                else:
+                    print('{} {} not in full_link_dict'.format(node1, node2))
+
+    for frag_i, frag_j in flank_link_dict:
+        if frag_i in bin_set:
+            ctg_i = frag_i.rsplit('_bin', 1)[0]
+        else:
+            ctg_i = frag_i
+        if frag_j in bin_set:    
+            ctg_j = frag_j.rsplit('_bin', 1)[0]
+        else:
+            ctg_j = frag_j
+        # update flank_link_dict
+        if (ctg_i, ctg_j) in ul_linked_ctg_pairs:
+            if (frag_i, frag_j) in flank_link_dict:
+                print('update flank_link_dict: {} {}'.format(frag_i, frag_j))
+                flank_link_dict[(frag_i, frag_j)] *= 2
+            else:
+                print('{} {} not in flank_link_dict'.format(frag_i, frag_j))
 
 
 def prune(matrix, pruning, dense_matrix):
@@ -2262,6 +2486,9 @@ def parse_arguments():
             '(see `--read_depth_upper`). If multiple GFA file is provided, HapHiC assumes these GFA files are haplotype-specific, and then artificially '
             'reduces the Hi-C links between the haplotypes according to this phasing information (see `--phasing_weight`). This parameter can also work with '
             '`--quick_view` to separate contigs into different haplotype groups')
+    input_group.add_argument(
+            '--ul', default=None,
+            help='ultra-long read alignments in BAM format, default: %(default)s')
 
     # Parameters for assembly correction
     correct_group = parser.add_argument_group('>>> Parameters for assembly correction')
@@ -2358,6 +2585,27 @@ def parse_arguments():
             help='weight of phasing information, default: %(default)s. When this parameter is set to 1.0, all Hi-C links between haplotypes will be removed. Set this'
             'parameter to 0 to completely ignore the phasing information in the GFA files. This parameter only works if `--gfa` is set and mulitple gfa files are input')
 
+    # Parameters for parsing ultra-long reads
+    ul_group = parser.add_argument_group('>>> Parameters for parsing ultra-long reads')
+    ul_group.add_argument(
+            '--min_ul_mapq', type=int, default=30,
+            help='MAPQ cutoff, alignments with MAPQ lower than this value will be removed, default: %(default)s')
+    ul_group.add_argument(
+            '--min_ul_alignment_length', type=int, default=10000,
+            help='alignment length cutoff, alignments shorter than this value will be removed, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--max_distance_to_end', type=int, default=100,
+            help='the distance to the ends of a contig should be less than this value, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--max_overlap_ratio', type=float, default=0.5,
+            help='the length ratio of overlap between primary and supplementary alignments should be less than this value, default: %(default)s')
+    ul_group.add_argument(
+            '--max_gap_len', type=int, default=10000,
+            help='maximum gap length between primary and supplementary alignments, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--min_ul_support', type=int, default=2,
+            help='a linkage between two contigs should be supported by more than this number of UL reads, default: %(default)s')
+
     # Parameters for adjacency matrix construction and Markov clustering
     mcl_group = parser.add_argument_group('>>> Parameters for adjacency matrix construction and Markov Clustering')
     mcl_group.add_argument(
@@ -2450,6 +2698,10 @@ def run(args, log_file=None):
     if args.aln_format == 'auto':
         detect_format(args)
 
+    if args.correct_nrounds:
+        args.ul = None
+        logger.warning('Ultra-long data are not supported now when assembly correction is enabled')
+
     # quick view mode
     if args.quick_view:
         args.bin_size = 0
@@ -2483,11 +2735,27 @@ def run(args, log_file=None):
     # the original read depth info of contigs after correction
     ctg_read_depth_dict = read_depth_dict.copy()
 
+    if args.ul:
+        whitelist = set()
+        path_list = parse_ul_alignments(args)
+        for path in path_list:
+            for i in range(len(path) - 1):
+                if i % 2 != 0:
+                    node1, node2 = path[i], path[i+1]
+                    ctg1 = node1.rsplit('_', 1)[0]
+                    ctg2 = node2.rsplit('_', 1)[0]
+                    whitelist.add(ctg1)
+                    whitelist.add(ctg2)
+    else:
+        whitelist = set()
+    # # record whitelist for reassignment
+    args.whitelist = whitelist
+
     # statistics for fragments (contigs / bins)
     _, bin_set, bin_size, frag_len_dict, Nx_frag_set, RE_site_dict, split_ctg_set = stat_fragments(
-            fa_dict, args.RE, read_depth_dict, nchrs=args.nchrs, flank=args.flank, Nx=args.Nx, bin_size=args.bin_size)
+            fa_dict, args.RE, read_depth_dict, whitelist, nchrs=args.nchrs, flank=args.flank, Nx=args.Nx, bin_size=args.bin_size)
 
-    # construct linking matrix from BAM file
+    # construct linking matrix from Hi-C alignments
 
     if args.correct_nrounds and nbroken_ctgs:
         # need all read1 Hi-C links and contig conversion
@@ -2529,6 +2797,10 @@ def run(args, log_file=None):
         full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict = parse_alignments_for_ctgs(
                 alignments, fa_dict, args, frag_len_dict, Nx_frag_set)
 
+    if args.ul:    
+        # update HT_link_dict based on the contig paths supported by ultra-long reads 
+        add_HT_links_based_on_ul(path_list, HT_link_dict)
+
     # output HT_link_dict.pkl for HapHiC sort
     output_pickle(HT_link_dict, 'HT_link_dict', 'HT_links.pkl')
     del HT_link_dict
@@ -2558,7 +2830,7 @@ def run(args, log_file=None):
     filtered_frags = filter_fragments(
             Nx_frag_set, RE_site_dict, args.RE_site_cutoff, frag_link_dict,
             args.density_lower, args.density_upper, args.topN, args.rank_sum_upper,
-            args.rank_sum_hard_cutoff, flank_link_dict, read_depth_dict, args.read_depth_upper)
+            args.rank_sum_hard_cutoff, flank_link_dict, read_depth_dict, args.read_depth_upper, whitelist)
 
     # update flank_link_dict & full_link_dict by removing Hi-C links between alleic contig pairs
     if args.remove_allelic_links:
@@ -2570,6 +2842,10 @@ def run(args, log_file=None):
                     fa_dict, ctg_coord_dict, full_link_dict, args, flank_link_dict, filtered_frags)
         del ctg_coord_dict
         gc.collect()
+
+    # update flank_link_dict and full_link_dict based on the contig paths supported by ultra-long reads
+    if args.ul:
+        add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_dict, bin_set)
 
     # update flank_link_dict & full_link_dict based on the phasing information
     if args.gfa and len(gfa_list) >= 2 and args.phasing_weight:

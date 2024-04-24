@@ -55,6 +55,9 @@ def parse_argument():
             '(see `--read_depth_upper`). If multiple GFA files are provided, HapHiC assumes these GFA files are haplotype-specific, and then artificially '
             'reduces the Hi-C links between the haplotypes according to this phasing information (see `--phasing_weight`). This parameter can also work with '
             '`--quick_view` to separate contigs into different haplotype groups')
+    input_group.add_argument(
+            '--ul', default=None,
+            help='ultra-long read alignments in BAM format, default: %(default)s')
 
     # Paramters for pipeline control and shared parameters
     pipe_group = parser.add_argument_group('>>> Paramters for pipeline control and shared parameters')
@@ -170,6 +173,27 @@ def parse_argument():
             '--phasing_weight', type=float, default=1.0,
             help='weight of phasing information, default: %(default)s. When this parameter is set to 1.0, all Hi-C links between haplotypes will be removed. Set this'
             'parameter to 0 to completely ignore the phasing information in the GFA files. This parameter only works if `--gfa` is set and mulitple gfa files are input')
+
+    # Parameters for parsing ultra-long reads
+    ul_group = parser.add_argument_group('>>> Parameters for parsing ultra-long reads')
+    ul_group.add_argument(
+            '--min_ul_mapq', type=int, default=30,
+            help='MAPQ cutoff, alignments with MAPQ lower than this value will be removed, default: %(default)s')
+    ul_group.add_argument(
+            '--min_ul_alignment_length', type=int, default=10000,
+            help='alignment length cutoff, alignments shorter than this value will be removed, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--max_distance_to_end', type=int, default=100,
+            help='the distance to the ends of a contig should be less than this value, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--max_overlap_ratio', type=float, default=0.5,
+            help='the length ratio of overlap between primary and supplementary alignments should be less than this value, default: %(default)s')
+    ul_group.add_argument(
+            '--max_gap_len', type=int, default=10000,
+            help='maximum gap length between primary and supplementary alignments, default: %(default)s (bp)')
+    ul_group.add_argument(
+            '--min_ul_support', type=int, default=2,
+            help='a linkage between two contigs should be supported by more than this number of UL reads, default: %(default)s')
 
     # Parameters for adjacency matrix construction and Markov clustering
     mcl_group = parser.add_argument_group('>>> Parameters for adjacency matrix construction and Markov clustering')
@@ -465,6 +489,8 @@ def main():
     args.fasta = abspath(args.fasta)
     args.raw_fasta = args.fasta
     args.alignments = abspath(args.alignments)
+    if args.ul:
+        args.ul = abspath(args.ul)
     if args.gfa:
         args.gfa = ','.join([abspath(gfa) for gfa in args.gfa.split(',')])
 

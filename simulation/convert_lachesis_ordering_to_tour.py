@@ -38,9 +38,9 @@ def parse_ordering_files(ordering_files, fa_list):
                     else:
                         output_ordering.append(cols[1]+'-')
 
-    for ID in fa_list:
-        if ID+'+' not in output_ordering and ID+'-' not in output_ordering:
-            output_ordering.append(ID+'+')
+    # for ID in fa_list:
+    #     if ID+'+' not in output_ordering and ID+'-' not in output_ordering:
+    #         output_ordering.append(ID+'+')
 
     return output_ordering
 
@@ -63,7 +63,8 @@ def main():
 
     output_ordering = parse_ordering_files(args.ordering_files, fa_list)
 
-    output_tour(output_ordering, args.prefix)
+    if len(output_ordering) > 1:
+        output_tour(output_ordering, args.prefix)
 
 if __name__ == '__main__':
     main()

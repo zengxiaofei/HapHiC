@@ -12,6 +12,7 @@
 import os
 import sys
 import subprocess
+import pkg_resources
 from scripts._version import __version__, __update_time__
 
 
@@ -46,8 +47,10 @@ HELP_DOC = """
   sort       [Step3] Order and orient contigs within each group.
   build      [Step4] Build final scaffolds (pseudomolecules).
 
-  plot       Draw Hi-C contact map for the whole genome or each scaffold
-  
+  plot       Draw Hi-C contact map for the whole genome or each scaffold.
+
+  check      Check whether all dependencies are correctly installed.
+
   allhic     Call a modified version of ALLHiC, in which the hot-start optimization
              has been fixed (source code: https://github.com/zengxiaofei/allhic).
   juicer     Show the guide to generate files for Juicebox visualization.
@@ -85,6 +88,17 @@ param_dict = {
         'pipeline': 'HapHiC_pipeline.py',
         'allhic': 'allhic'}
 
+
+def check_packages(pkg, pkg_name):
+
+    try:
+        print('Checking {}... '.format(pkg_name), end='')
+        __import__(pkg)
+        print('\033[32mSuccessful (version: {}).\033[0m'.format(pkg_resources.get_distribution(pkg_name).version))
+    except:
+        print('\033[31mFailed. {} is not correctly installed.\033[0m'.format(pkg_name))
+
+
 # commands
 if len(sys.argv) > 1 and sys.argv[1] in param_dict:
 
@@ -100,6 +114,19 @@ elif len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'
 
     print(TITLE_DOC)
     print(HELP_DOC)
+
+
+elif sys.argv[1] == 'check':
+    for pkg, pkg_name in [
+            ('pysam', 'pysam'), ('portion', 'portion'), 
+            ('numpy', 'numpy'), ('scipy', 'scipy'), 
+            ('sklearn', 'scikit-learn'), 
+            ('networkx', 'networkx'), 
+            ('sparse_dot_mkl', 'sparse_dot_mkl'), 
+            ('matplotlib', 'matplotlib')]:
+
+        check_packages(pkg, pkg_name)
+
 
 elif sys.argv[1] in {'-v', '--version'}:
     print('HapHiC', __version__)

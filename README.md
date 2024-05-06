@@ -63,7 +63,10 @@ $ conda env create -f HapHiC/conda_env/environment_py310.yml
 # Activate the HapHiC conda environment
 $ conda activate haphic # or: source /path/to/conda/bin/activate haphic
 
-# (3) Show all available commands and help message
+# (3) Check whether all dependencies are correctly installed
+$ /path/to/HapHiC/haphic check
+
+# (4) Show all available commands and help message
 $ /path/to/HapHiC/haphic -h
 ```
 

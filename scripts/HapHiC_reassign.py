@@ -531,8 +531,14 @@ def agglomerative_hierarchical_clustering(full_link_dict, grouped_ctgs, new_ctg_
 
     # use max - density to construct distance matrix
     group_link_matrix = max_link_density - group_link_matrix
-
-    clust = AgglomerativeClustering(n_clusters=nclusters, affinity="precomputed", linkage="average", distance_threshold=None)
+    
+    if 'affinity' in AgglomerativeClustering._get_param_names():
+        clust = AgglomerativeClustering(n_clusters=nclusters, affinity="precomputed", linkage="average", distance_threshold=None)
+    else:
+        # add support for higher version of scikit-learn
+        logger.info('The parameter "affinity" is not found in AgglomerativeClustering, use "metric" instead')
+        assert 'metric' in AgglomerativeClustering._get_param_names()
+        clust = AgglomerativeClustering(n_clusters=nclusters, metric="precomputed", linkage="average", distance_threshold=None)
 
     clusters = clust.fit_predict(group_link_matrix)
 

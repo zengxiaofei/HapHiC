@@ -23,7 +23,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 * Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
 * Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp` for compatibility with the Juicebox visualization method suggested by YaHS.
 
-**Terminology:** To ensure concision and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
+**Terminology:** To ensure conciseness and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
 
 
 

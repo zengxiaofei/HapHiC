@@ -15,37 +15,30 @@ pysam.set_verbosity(0)
 
 
 def parse_bam_for_falign(bam, mapq, percent_identity, alignment_length, threads):
-    
+
     def parse_current_aln_list(current_aln_list, aln, fout):
-        
+
         if len(current_aln_list) > 1:
 
             for n, (aln1, aln2) in enumerate(combinations(current_aln_list, 2)):
 
-                if aln1.mapq < mapq or aln2.mapq < mapq:
-                    continue
-                if aln1.get_tag('pi') < percent_identity or aln2.get_tag('pi') < percent_identity:
-                    continue
-                if aln1.query_alignment_length < alignment_length or aln2.query_alignment_length < alignment_length:
-                    continue
-                
                 aln1_copy, aln2_copy = copy(aln1), copy(aln2)
-                
+
                 mock_read_name = aln1_copy.query_name + '_read{}'.format(n)
                 aln1_copy.query_name = aln2_copy.query_name = mock_read_name
-                
+
                 aln1_copy.flag += 65 + 2 * aln2.flag
                 aln2_copy.flag += 129 + 2 * aln1.flag
-                
+
                 aln1_copy.next_reference_name = aln2.reference_name
                 aln2_copy.next_reference_name = aln1.reference_name
-                
+
                 aln1_copy.next_reference_start = aln2.reference_start
                 aln2_copy.next_reference_start = aln1.reference_start
-                
+
                 fout.write(aln1_copy)
                 fout.write(aln2_copy)
-        
+
         current_aln_list.clear()
         current_aln_list.append(aln)
         return aln.query_name
@@ -53,8 +46,17 @@ def parse_bam_for_falign(bam, mapq, percent_identity, alignment_length, threads)
 
     current_aln_list = []
     current_read = None
-    with pysam.AlignmentFile(bam, mode='rb', threads=threads) as fin, pysam.AlignmentFile('porec_paired.bam', mode='wb', threads=threads, template=fin) as fout:
+    with pysam.AlignmentFile(bam, mode='rb', threads=threads, format_options=[b'filter=!flag.unmap']) as fin, \
+            pysam.AlignmentFile('porec_paired.bam', mode='wb', threads=threads, template=fin) as fout:
         for aln in fin:
+            # alignment filtering
+            if aln.mapq < mapq:
+                continue
+            if aln.get_tag('pi') < percent_identity:
+                continue
+            if aln.query_alignment_length < alignment_length:
+                continue
+
             if aln.query_name == current_read:
                 current_aln_list.append(aln)
             else:

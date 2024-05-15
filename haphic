@@ -12,7 +12,10 @@
 import os
 import sys
 import subprocess
-import pkg_resources
+try:
+    from importlib.metadata import distribution
+except:
+    from pkg_resources import get_distribution as distribution
 from scripts._version import __version__, __update_time__
 
 
@@ -94,7 +97,7 @@ def check_packages(pkg, pkg_name):
     try:
         print('Checking {}... '.format(pkg_name), end='')
         __import__(pkg)
-        print('\033[32mSuccessful (version: {}).\033[0m'.format(pkg_resources.get_distribution(pkg_name).version))
+        print('\033[32mSuccessful (version: {}).\033[0m'.format(distribution(pkg_name).version))
     except:
         print('\033[31mFailed. {} is not correctly installed.\033[0m'.format(pkg_name))
 

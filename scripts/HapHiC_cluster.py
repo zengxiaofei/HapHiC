@@ -1767,22 +1767,29 @@ def parse_ul_alignments(args):
             # the alignment should be close to at least one of the end of the reference
             if aln.reference_start > max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end > max_distance_to_end:
                 continue
-            # if the alignment is close to both ends of the reference, the alignment should be far away from the ends of the query
-            if aln.reference_start <= max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end <= max_distance_to_end:
-                if aln.query_alignment_start <= max_distance_to_end or aln.infer_read_length() - aln.query_alignment_end <= max_distance_to_end:
-                    continue
+            # calculate start and end coordinates on the read based on the alignment orientation
+            read_length = aln.infer_read_length()
+            if aln.is_forward:
+                query_start, query_end = aln.query_alignment_start, aln.query_alignment_end
+            else:
+                query_start, query_end = read_length - aln.query_alignment_end, read_length - aln.query_alignment_start
+            # # if the alignment is close to both ends of the reference, the alignment should be far away from the ends of the query
+            # if aln.reference_start <= max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end <= max_distance_to_end:
+            #     if query_start <= max_distance_to_end or read_length - query_end <= max_distance_to_end:
+            #         continue
 
             # for primary alignments
             if aln.flag in primary_set:
                 if supplementary_aln_list:
                     parse_supplementary_aln_list(primary_aln, supplementary_aln_list, f)
                 primary_aln = aln
+                primary_query_start, primary_query_end = query_start, query_end
                 supplementary_aln_list.clear()
             # for supplementary alignments
             elif aln.is_supplementary and primary_aln and aln.query_name == primary_aln.query_name and aln.reference_name != primary_aln.reference_name:
                 # read alignment interval filtering
-                primary_read_interval = closed(primary_aln.query_alignment_start + 1, primary_aln.query_alignment_end)
-                supplementary_read_interval = closed(aln.query_alignment_start + 1, aln.query_alignment_end)
+                primary_read_interval = closed(primary_query_start + 1, primary_query_end)
+                supplementary_read_interval = closed(query_start + 1, query_end)
                 overlap = primary_read_interval & supplementary_read_interval
                 # if there is a overlap in read intervals between primary and supplementary alignments
                 if overlap:
@@ -1870,8 +1877,9 @@ def add_HT_links_based_on_ul(path_list, HT_link_dict):
 
 def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_dict, bin_set):
 
-    ul_linked_ctg_pairs = set()
+    ul_linked_ctgs = []
     for path in path_list:
+        ul_linked_ctgs.append(set())
         for i in range(len(path) - 1):
             if i % 2 != 0:
                 # get linked semi-contigs between different contigs
@@ -1880,8 +1888,8 @@ def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_d
                 # get corresponding contig names
                 ctg1 = node1.rsplit('_', 1)[0]
                 ctg2 = node2.rsplit('_', 1)[0]
-                ul_linked_ctg_pairs.add((ctg1, ctg2))
-                ul_linked_ctg_pairs.add((ctg2, ctg1))
+                ul_linked_ctgs[-1].add(ctg1)
+                ul_linked_ctgs[-1].add(ctg2)
 
                 # sort by contig name
                 (ctg1, node1), (ctg2, node2) = sorted(((ctg1, node1), (ctg2, node2))) 
@@ -1893,6 +1901,12 @@ def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_d
                     full_link_dict[(ctg1, ctg2)] *= 2
                 else:
                     print('{} {} not in full_link_dict'.format(node1, node2))
+
+    ul_linked_ctg_pairs = set()
+    for ctgs in ul_linked_ctgs:
+        for ctg1, ctg2 in combinations(ctgs, 2):
+            ul_linked_ctg_pairs.add((ctg1, ctg2))
+            ul_linked_ctg_pairs.add((ctg2, ctg1))
 
     for frag_i, frag_j in flank_link_dict:
         if frag_i in bin_set:

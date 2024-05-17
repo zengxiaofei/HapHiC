@@ -298,7 +298,7 @@ You can try the quick view mode in HapHiC when:
 In quick view mode, HapHiC simply uses the fast sorting to order and orient all contigs without clustering. The result is similar to `*.0.hic` in [3D-DNA](https://github.com/aidenlab/3d-dna). Most parameters are disabled in this mode, but you can use `--correct_nrounds` to correct input contigs. When scaffolding a haplotype-resolved hifiasm assembly ( `*.hap*.p_ctg.gfa` ), you can still partition contigs into different haplotypes with the haplotype-specific GFA files.
 
 ```bash
-# Autohic will ignore the parameter "nchrs", it can be any integer
+# HapHiC will ignore the parameter "nchrs", it can be any integer
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --quick_view
 # Correct input contigs before a quick view
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --quick_view --correct_nrounds 2

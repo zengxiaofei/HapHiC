@@ -1723,6 +1723,23 @@ def parse_ul_alignments(args):
 
     G_HT = Graph()
 
+    def get_query_alignment_termini(aln):
+
+        if aln.is_forward:
+            # '5' means hard-clipping
+            if aln.cigartuples[0][0] == 5:
+                hard_clip = aln.cigartuples[0][1]
+            else:
+                hard_clip = 0
+            return aln.query_alignment_start + hard_clip, aln.query_alignment_end + hard_clip
+        else:
+            if aln.cigartuples[-1][0] == 5:
+                hard_clip = aln.cigartuples[-1][1]
+            else:
+                hard_clip = 0
+            read_len = aln.infer_read_length()
+            return read_len - aln.query_alignment_end + hard_clip, read_len - aln.query_alignment_start + hard_clip
+
     def parse_supplementary_aln_list(primary_aln, supplementary_aln_list, f):
 
         # get the best supplementary alignment based on the AS tag (score)
@@ -1732,16 +1749,15 @@ def parse_ul_alignments(args):
 
         # link semi-contigs using UL reads
         semi_ctg_list = [[(primary_aln, '_H'), (primary_aln, '_T')], [(supplementary_aln, '_H'), (supplementary_aln, '_T')]]
-
         # get the adjacent semi-contigs of different contigs
         if primary_aln.is_reverse:
             semi_ctg_list[0].reverse()
         if supplementary_aln.is_reverse:
             semi_ctg_list[1].reverse()
-        semi_ctg_list.sort(key=lambda x: x[0][0].query_alignment_start, reverse=primary_aln.is_reverse)
+        semi_ctg_list.sort(key=lambda x: get_query_alignment_termini(x[0][0])[0])
+        # semi_ctg_list.sort(key=lambda x: get_query_alignment_termini(x[0][0])[0], reverse=primary_aln.is_reverse)
         left_semi_ctg = semi_ctg_list[0][1][0].reference_name + semi_ctg_list[0][1][1]
         right_semi_ctg = semi_ctg_list[1][0][0].reference_name + semi_ctg_list[1][0][1]
-
         # add edges for semi-contigs of different contigs
         add_edge(G_HT, left_semi_ctg, right_semi_ctg)
         # to avoid breaking inside a contig, the edge weight within a contig should always be equal to or greater than the edge weight between different contigs
@@ -1768,11 +1784,8 @@ def parse_ul_alignments(args):
             if aln.reference_start > max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end > max_distance_to_end:
                 continue
             # calculate start and end coordinates on the read based on the alignment orientation
-            read_length = aln.infer_read_length()
-            if aln.is_forward:
-                query_start, query_end = aln.query_alignment_start, aln.query_alignment_end
-            else:
-                query_start, query_end = read_length - aln.query_alignment_end, read_length - aln.query_alignment_start
+            query_start, query_end = get_query_alignment_termini(aln)
+
             # # if the alignment is close to both ends of the reference, the alignment should be far away from the ends of the query
             # if aln.reference_start <= max_distance_to_end and f.get_reference_length(aln.reference_name) - aln.reference_end <= max_distance_to_end:
             #     if query_start <= max_distance_to_end or read_length - query_end <= max_distance_to_end:
@@ -1819,7 +1832,7 @@ def parse_ul_alignments(args):
         # remove edges linked to a node with degree > 2
         G_HT_copy = deepcopy(G_HT)
         for node1, node2 in G_HT_copy.edges():
-            if (G_HT_copy.degree(node1) > 2 or G_HT_copy.degree(node2) > 2) and node1.rsplit('_', 0) != node2.rsplit('_', 0):
+            if (G_HT_copy.degree(node1) > 2 or G_HT_copy.degree(node2) > 2) and node1.rsplit('_', 1)[0] != node2.rsplit('_', 1)[0]:
                 G_HT.remove_edge(node1, node2)
 
         # find connected subgraphs
@@ -1829,7 +1842,7 @@ def parse_ul_alignments(args):
             # link at least two contigs
             if len(subnodes) < 4:
                 continue
-            print([(node, G_HT.degree(node)) for node in subnodes])
+            logger.debug([(node, G_HT.degree(node)) for node in subnodes])
             assert len(subnodes) % 2 == 0
             subgraph = G_HT.subgraph(subnodes).copy()
             degree_list = [subgraph.degree(node) for node in subnodes]
@@ -1846,7 +1859,7 @@ def parse_ul_alignments(args):
                 subgraph.remove_edge(node1, node2)
             path = shortest_path(subgraph)[node1][node2]
             path_list.append(path)
-            print('->'.join(path),'-'.join([str(f.get_reference_length(node.rsplit('_', 1)[0])//2) for node in path]))
+            logger.debug('{}\t{}'.format('->'.join(path), '-'.join([str(f.get_reference_length(node.rsplit('_', 1)[0])//2) for node in path])))
 
     return path_list
 
@@ -1869,10 +1882,10 @@ def add_HT_links_based_on_ul(path_list, HT_link_dict):
                 # update HT_link_dict
                 assert (node2, node1) not in HT_link_dict
                 if (node1, node2) in HT_link_dict:
-                    print('update HT_link_dict: {} {}'.format(node1, node2))
+                    logger.debug('update HT_link_dict: {} {}'.format(node1, node2))
                     HT_link_dict[(node1, node2)] *= 2
                 else:
-                    print('{} {} not in HT_link_dict'.format(node1, node2))
+                    logger.debug('{} {} not in HT_link_dict'.format(node1, node2))
 
 
 def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_dict, bin_set):
@@ -1897,10 +1910,10 @@ def add_flank_and_full_links_based_on_ul(path_list, flank_link_dict, full_link_d
                 # update full_link_dict
                 assert (ctg2, ctg1) not in full_link_dict
                 if (ctg1, ctg2) in full_link_dict:
-                    print('update full_link_dict: {} {}'.format(ctg1, ctg2))
+                    logger.debug('update full_link_dict: {} {}'.format(ctg1, ctg2))
                     full_link_dict[(ctg1, ctg2)] *= 2
                 else:
-                    print('{} {} not in full_link_dict'.format(node1, node2))
+                    logger.debug('{} {} not in full_link_dict'.format(node1, node2))
 
     ul_linked_ctg_pairs = set()
     for ctgs in ul_linked_ctgs:

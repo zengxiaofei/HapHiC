@@ -81,7 +81,7 @@ First, you need to prepare a BAM file by aligning Hi-C data to the assembly. Her
 ```bash
 # (1) Align Hi-C data to the assembly, remove PCR duplicates and filter out secondary and supplementary alignments
 $ bwa index asm.fa
-$ bwa mem -5SP asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblaster | samtools view - -@ 14 -S -h -b -F 3340 -o HiC.bam
+$ bwa mem -5SP -t 28 asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblaster | samtools view - -@ 14 -S -h -b -F 3340 -o HiC.bam
 
 # (2) Filter the alignments with MAPQ 1 (mapping quality ≥ 1) and NM 3 (edit distance < 3)
 $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view - -b -@ 14 -o HiC.filtered.bam

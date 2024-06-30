@@ -680,7 +680,7 @@ def parse_arguments():
     input_group.add_argument(
             'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     input_group.add_argument(
-            'HT_links', help='HT_links.pkl generated in the clustering step')
+            'HT_links', help='`HT_links.pkl` generated in the clustering step')
     input_group.add_argument(
             'clm_dir', help='directory containing split clm files generated in the reassignment step (`split_clms`). '
             'The program will find the corresponding clm file for each input group file')

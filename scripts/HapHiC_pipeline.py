@@ -78,6 +78,9 @@ def parse_argument():
             '--normalize_by_nlinks', default=False, action='store_true',
             help='normalize inter-contig Hi-C links by the number of links to other contigs or groups, default: %(default)s. This parameter is shared by '
             'both the clustering and reassignment steps') 
+    pipe_group.add_argument(
+            '--outdir', default=None,
+            help='output directory, default: %(default)s (current directory)')
 
     # Parameters for assembly correction
     correct_group = parser.add_argument_group('>>> Parameters for assembly correction')
@@ -424,7 +427,7 @@ def haphic_sort(args):
     # To improve memory usage of multiprocessing, the HapHiC_sort.py is called via subprocess
     # instead of import HapHiC_sort
     # HapHiC_sort.run(args, log_file=LOG_FILE)
-    commands = [os.path.join(os.path.dirname(os.path.realpath(__file__)), 'HapHiC_sort.py')]
+    commands = [pathjoin(os.path.dirname(os.path.realpath(__file__)), 'HapHiC_sort.py')]
     commands.extend([args.fasta, args.HT_links, args.clm_dir])
     commands.extend(args.groups)
 
@@ -493,6 +496,14 @@ def main():
         args.ul = abspath(args.ul)
     if args.gfa:
         args.gfa = ','.join([abspath(gfa) for gfa in args.gfa.split(',')])
+
+    # prepare output directory
+    if args.outdir:
+        try:
+            os.mkdir(args.outdir)
+        except FileExistsError:
+            logger.warning('The directory {} already exists'.format(args.outdir))
+        os.chdir(args.outdir)
 
     # Step1: Cluster contigs into groups
     haphic_cluster(args)

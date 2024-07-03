@@ -5,12 +5,28 @@
 # Email: xiaofei_zeng@whu.edu.cn
 # Created Time: 2024-06-06 10:01
 
+
+import sys
+import time
 import argparse
+import logging
+
 from collections import defaultdict
 from portion import closed
+from _version import __version__, __update_time__
+
+logging.basicConfig(
+        format='%(asctime)s <%(filename)s> [%(funcName)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+        )
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
-def parse_agp(agp):
+def parse_agp(agp, logger):
+
+    logger.info('Parsing input AGP file...')
 
     ctg_group_dict = defaultdict(list)
     group_ctg_dict = defaultdict(list)
@@ -57,7 +73,9 @@ def get_max_ovl_group(groups, ctg_aln_start, ctg_aln_end):
     return max_ovl_group
 
 
-def parse_paf(paf, ctg_group_dict):
+def parse_paf(paf, ctg_group_dict, logger):
+
+    logger.info('Parsing input PAF file...')
 
     group_ref_dict = defaultdict(dict)
     with open(paf) as f:
@@ -107,7 +125,9 @@ def parse_paf(paf, ctg_group_dict):
     return group_ref_dict
 
 
-def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, ref_order):
+def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, ref_order, logger):
+
+    logger.info('Ordering and orienting scaffolds based on alignments...')
 
     def get_reversed_orientation(orient):
         if orient == '+':
@@ -201,11 +221,12 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
     for ref in order_list:
         ref_groups_dict[ref].sort(key=lambda x: x[-1], reverse=True)
         for group, max_orient, _ in ref_groups_dict[ref]:
-
             if max_orient == 1:
+                logger.info('{}: {} +'.format(ref, group))
                 for line in group_agp_lines[group]:
                     print(line, end='')
             else:
+                logger.info('{}: {} -'.format(ref, group))
                 for n, line in enumerate(group_agp_lines[group][::-1], 1):
                     cols = line.split()
                     group, start, end = cols[0], int(cols[1]), int(cols[2])
@@ -224,7 +245,7 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                 print(line, end='')
 
 
-def main():
+def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
             'agp', help='final scaffolds (`scaffolds.raw.agp) or unsorted contigs in AGP format')
@@ -234,11 +255,34 @@ def main():
             '--ref_order', default=None,
             help='the order of the reference chromosomes for outputting scaffolds, default: %(default)s (sorted by chromosome ID of the reference genome). '
                  'You can manually specify the order by listing them, separated with commas, e.g., chr1,chr2,chr3')
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    ctg_group_dict, group_agp_lines, group_len_dict = parse_agp(args.agp)
-    group_ref_dict = parse_paf(args.paf, ctg_group_dict)
-    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, args.ref_order)
+
+def run(args, log_file=None):
+
+    if log_file:
+        file_handler = logging.FileHandler(log_file, 'w')
+        formatter=logging.Formatter(
+                fmt='%(asctime)s <%(filename)s> [%(funcName)s] %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    start_time = time.time()
+    logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
+    logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
+
+    ctg_group_dict, group_agp_lines, group_len_dict = parse_agp(args.agp, logger)
+    group_ref_dict = parse_paf(args.paf, ctg_group_dict, logger)
+    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, args.ref_order, logger)
+
+
+def main():
+
+    # get arguments
+    args = parse_arguments()
+
+    run(args, log_file='HapHiC_refsort.log')
 
 
 if __name__ == '__main__':

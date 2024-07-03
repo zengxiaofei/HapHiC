@@ -19,9 +19,10 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
+* Version 1.0.4 (2024.07.03): Add a `haphic refsort` command for [ordering and orienting whole scaffolds according to a reference genome](#refsort).
 * Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap).
-* Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for Hi-C contact map visualization.
-* Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp` for compatibility with the Juicebox visualization method suggested by YaHS.
+* Version 1.0.2 (2023.12.08): We have introduced a `haphic plot` command for [Hi-C contact map visualization](#visualization).
+* Version 1.0.1 (2023.11.30): Improved AGP output by incorporating a YaHS-style `scaffolds.raw.agp` for compatibility with the [Juicebox visualization](#juicebox) method suggested by YaHS.
 
 **Terminology:** To ensure conciseness and clarity, we use the term "contigs" to refer to the fragmented genome sequences in the input assembly, although they could be either contigs or scaffolds in actuality.
 
@@ -42,6 +43,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 - [Quick view mode](#quick_view)
 - [Juicebox curation](#juicebox)
 - [Visualization](#visualization)
+- [Order and orient whole scaffolds using a reference genome](#refsort)
 - [Frequently asked questions (FAQs)](#faqs)
 - [Problems and bug reports](#problems)
 - [Citing HapHiC](#citing)
@@ -95,7 +97,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 
 ### <span id="pipeline">Run HapHiC scaffolding pipeline</span>
 
-**(i) One-line command.** HapHiC provides a one-line command `haphic pipeline` to execute the entire scaffolding pipeline. The required parameters are 1) `asm.fa` , your genome assembly file in FASTA format; 2) `HiC.filtered.bam` , the BAM file prepared in the previous step; 3) `nchrs` , the number of chromosomes present in the assembly, and also the expected number of output scaffolds.
+**(i) One-line command.** HapHiC provides a one-line command `haphic pipeline` to execute the entire scaffolding pipeline. The required parameters are 1) `asm.fa` , your genome assembly file in FASTA format; 2) `HiC.filtered.bam` , the BAM file prepared in the previous step (the .pairs file output by chromap is also acceptable since version 1.0.3); 3) `nchrs` , the number of chromosomes present in the assembly, and also the expected number of output scaffolds.
 
 ```bash
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs
@@ -407,6 +409,34 @@ To change the colormap, origin, border style, and normalization method for the c
 
 
 
+## <span id="refsort">Order and orient whole scaffolds using a reference genome</span>
+
+HapHiC has introduced a separate command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
+
+To begin, you should prepare a PAF file by align raw contigs (not scaffolds) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
+
+```bash
+# The preset can be `asm5` if the reference genome is well-assembled from the same species
+$ minimap2 -x asm20 ref.fa asm.fa --secondary=no -t 28 -o asm_to_ref.paf
+```
+
+By using the `haphic refsort` command, you can generate a new AGP file based on the PAF file:
+
+```bash
+# By default, scaffolds are output based on the alphabetical order of the chromosome IDs of the reference genome
+$ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf > scaffolds.refsort.agp
+# You can manually specify the order by listing them and separating with commas
+$ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order chr1,chr2,chr3,chr4,... > scaffolds.refsort.agp
+```
+
+The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that this function will **NOT** alter your scaffolds, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
+
+Here is an example of the human HG002 diploid assembly:
+
+![](./images/HG002_refsort.png)
+
+
+
 ## <span id="faqs">Frequently asked questions (FAQs)</span>
 
 * **How can I do when the anchoring rate is too low?**
@@ -434,6 +464,7 @@ To change the colormap, origin, border style, and normalization method for the c
 ## <span id="problems">Problems and bug reports</span>
 
 * **Issues:** https://github.com/zengxiaofei/HapHiC/issues
+* **Before asking questions, please read:** [Important: More information allows me to grasp your issue faster](https://github.com/zengxiaofei/HapHiC/issues/32)
 
 
 

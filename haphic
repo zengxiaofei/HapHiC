@@ -51,8 +51,8 @@ HELP_DOC = """
   build      [Step4] Build final scaffolds (pseudomolecules).
 
   plot       Draw Hi-C contact map for the whole genome or each scaffold.
-
   check      Check whether all dependencies are correctly installed.
+  refsort    Order and orient whole scaffolds based on a reference genome.
 
   allhic     Call a modified version of ALLHiC, in which the hot-start optimization
              has been fixed (source code: https://github.com/zengxiaofei/allhic).
@@ -87,6 +87,7 @@ param_dict = {
         'reassign': 'HapHiC_reassign.py',
         'sort': 'HapHiC_sort.py',
         'build': 'HapHiC_build.py',
+        'refsort': 'HapHiC_refsort.py',
         'plot': 'HapHiC_plot.py',
         'pipeline': 'HapHiC_pipeline.py',
         'allhic': 'allhic'}
@@ -108,7 +109,10 @@ if len(sys.argv) > 1 and sys.argv[1] in param_dict:
     script_realpath = os.path.dirname(os.path.realpath(__file__))
     sub_program = os.path.join(script_realpath, 'scripts', param_dict[sys.argv[1]])
 
-    commands = [sub_program] + sys.argv[2:]
+    if len(sys.argv[2:]) == 0:
+        commands = [sub_program, '-h']
+    else:
+        commands = [sub_program] + sys.argv[2:]
 
     subprocess.run(commands, check=True)
 

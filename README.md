@@ -413,7 +413,7 @@ To change the colormap, origin, border style, and normalization method for the c
 
 HapHiC has introduced a separate command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
 
-To begin, you should prepare a PAF file by align raw contigs (not scaffolds) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
+To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
 
 ```bash
 # The preset can be `asm5` if the reference genome is well-assembled from the same species

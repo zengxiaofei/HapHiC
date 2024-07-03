@@ -52,11 +52,15 @@ def parse_agp(agp, logger):
             ctg_group_dict[ctg].append((group, ctg_start, ctg_end, group_start, group_end, ctg_orient))
             group_ctg_dict[group].append((ctg, ctg_end - ctg_start + 1))
 
+    one_ctg_groups = set()
     for group, ctg_len_list in group_ctg_dict.items():
         if len(ctg_len_list) == 1 and sum([l for _, l in ctg_len_list]) < 10000000:
-            del ctg_group_dict[group]
+            one_ctg_groups.add(group)
+            for i, ctg_info in enumerate(ctg_group_dict[ctg_len_list[0][0]][::-1]):
+                if ctg_info[0] == group:
+                    ctg_group_dict[ctg_len_list[0][0]].pop(i)
 
-    return ctg_group_dict, group_agp_lines, group_len_dict
+    return ctg_group_dict, group_agp_lines, group_len_dict, one_ctg_groups
 
 
 def get_max_ovl_group(groups, ctg_aln_start, ctg_aln_end):
@@ -125,7 +129,7 @@ def parse_paf(paf, ctg_group_dict, logger):
     return group_ref_dict
 
 
-def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, ref_order, logger):
+def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, ref_order, logger):
 
     logger.info('Ordering and orienting scaffolds based on alignments...')
 
@@ -218,9 +222,12 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
         order_list = sorted(ref_groups_dict.keys())
     else:
         order_list = ref_order.split(',')
+
     for ref in order_list:
         ref_groups_dict[ref].sort(key=lambda x: x[-1], reverse=True)
         for group, max_orient, _ in ref_groups_dict[ref]:
+            if group in one_ctg_groups or group is None:
+                continue
             if max_orient == 1:
                 logger.info('{}: {} +'.format(ref, group))
                 for line in group_agp_lines[group]:
@@ -240,7 +247,7 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                         group, reversed_start, reversed_end, n, cols[4], cols[5], cols[6], cols[7], last_col))
 
     for group, lines in group_agp_lines.items():
-        if group not in group_ref_dict:
+        if group not in group_ref_dict or group in one_ctg_groups:
             for line in lines:
                 print(line, end='')
 
@@ -272,9 +279,9 @@ def run(args, log_file=None):
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
 
-    ctg_group_dict, group_agp_lines, group_len_dict = parse_agp(args.agp, logger)
+    ctg_group_dict, group_agp_lines, group_len_dict, one_ctg_groups = parse_agp(args.agp, logger)
     group_ref_dict = parse_paf(args.paf, ctg_group_dict, logger)
-    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, args.ref_order, logger)
+    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args.ref_order, logger)
 
 
 def main():

@@ -87,7 +87,7 @@ def parse_paf(paf, ctg_group_dict, logger):
             if not line.strip():
                 continue
             cols = line.split()
-            if int(cols[11]) < 1 or 'tp:A:P' not in line:
+            if int(cols[11]) < 1:
                 continue
             ctg, ctg_aln_start, ctg_aln_end, ref = cols[0], int(cols[2]), int(cols[3]), cols[5]
             if cols[4] == '+':
@@ -222,12 +222,14 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
         order_list = sorted(ref_groups_dict.keys())
     else:
         order_list = ref_order.split(',')
-
+    
+    output_groups = set()
     for ref in order_list:
         ref_groups_dict[ref].sort(key=lambda x: x[-1], reverse=True)
         for group, max_orient, _ in ref_groups_dict[ref]:
             if group in one_ctg_groups or group is None:
                 continue
+            output_groups.add(group)
             if max_orient == 1:
                 logger.info('{}: {} +'.format(ref, group))
                 for line in group_agp_lines[group]:
@@ -247,7 +249,7 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                         group, reversed_start, reversed_end, n, cols[4], cols[5], cols[6], cols[7], last_col))
 
     for group, lines in group_agp_lines.items():
-        if group not in group_ref_dict or group in one_ctg_groups:
+        if group not in output_groups:
             for line in lines:
                 print(line, end='')
 

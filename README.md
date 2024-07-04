@@ -418,6 +418,8 @@ To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**)
 ```bash
 # The preset can be `asm5` if the reference genome is well-assembled from the same species
 $ minimap2 -x asm20 ref.fa asm.fa --secondary=no -t 28 -o asm_to_ref.paf
+# `haphic refsort` can also be compatible with other aligners, like wfmash
+$ wfmash ref.fa asm.fa -m -n 1 -S 1 -t 28 > asm_to_ref.paf
 ```
 
 By using the `haphic refsort` command, you can generate a new AGP file based on the PAF file:

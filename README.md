@@ -431,9 +431,9 @@ $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order chr1,chr2
 
 The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that this function will **NOT** alter your scaffolds, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
 
-Here is an example of the human HG002 diploid assembly:
+Here is an example of the tetraploid sugarcane Np-X assembly:
 
-![](./images/HG002_refsort.png)
+![](./images/refsort_example.png)
 
 
 

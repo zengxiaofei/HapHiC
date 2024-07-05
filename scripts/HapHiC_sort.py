@@ -12,6 +12,8 @@ import logging
 import time
 import gc
 
+from HapHiC_build import parse_tours
+
 import pickle
 import argparse
 from collections import defaultdict
@@ -637,11 +639,95 @@ def run_allhic_optimization(args, group, prefix, clm, allhic):
             )
 
 
+def compare_fast_sort_and_allhic(prefix, fa_dict):
+
+    def find_lis(compare_list, order_len_dict, forward=True):
+
+        order_list = []
+        if forward:
+            order_list = [order for order in compare_list if order > 0]
+        else:
+            order_list = [order for order in compare_list if order < 0]
+
+        if not order_list:
+            return 0
+
+        dp = [0] * len(order_list)
+        sequence = [None] * len(order_list)
+        max_sum_idx = 0
+
+        for i in range(len(order_list)):
+            dp[i] = order_len_dict[order_list[i]]
+            for j in range(i):
+                if order_list[i] > order_list[j] and dp[i] < dp[j] + order_len_dict[order_list[i]]:
+                    dp[i] = dp[j] + order_len_dict[order_list[i]]
+                    sequence[i] = j
+            if dp[i] >= dp[max_sum_idx]:
+                max_sum_idx = i
+        max_sum = dp[max_sum_idx]
+
+        return max_sum
+
+    fast_sort_tour = '{}.tour.sav'.format(prefix)
+    allhic_tour = '{}.tour'.format(prefix)
+
+    fast_sort_ctg_list, fast_sort_ori_list = [], []
+    for ctg, ori in list(parse_tours([fast_sort_tour], fa_dict)[0].values())[0]:
+        fast_sort_ctg_list.append(ctg)
+        fast_sort_ori_list.append(ori)
+
+    ctg_len_list = [fa_dict[ctg] for ctg in fast_sort_ctg_list]
+    group_len = sum(ctg_len_list)
+    # if contigs are short enough, always choose allhic
+    group_ctg_len_ratio = group_len / max(ctg_len_list)
+    if group_ctg_len_ratio > 50:
+        logger.info('{}: choose allhic optimization (group length / longest contig = {})'.format(prefix, group_ctg_len_ratio))
+        return False
+
+    allhic_ctg_list, allhic_ori_list = [], []
+    for ctg, ori in list(parse_tours([allhic_tour], fa_dict)[0].values())[0]:
+        allhic_ctg_list.append(ctg)
+        allhic_ori_list.append(ori)
+
+    max_lis_len_ratio = 0
+    for n in range(len(fast_sort_ctg_list) - 1):
+        compare_list, order_len_dict = [], dict()
+        for i, ctg in enumerate(fast_sort_ctg_list):
+            j = allhic_ctg_list.index(ctg)
+            if fast_sort_ori_list[i] == allhic_ori_list[j]:
+                compare_list.append(j+1)
+                order_len_dict[j+1] = fa_dict[ctg]
+            else:
+                compare_list.append(-j-1)
+                order_len_dict[-j-1] = fa_dict[ctg]
+
+        max_sum_f = find_lis(compare_list, order_len_dict, forward=True)
+        max_sum_r = find_lis(compare_list, order_len_dict, forward=False)
+
+        max_sum = max(max_sum_f, max_sum_r)
+
+        lis_len_ratio = max_sum / group_len
+
+        if lis_len_ratio >= 0.9:
+            logger.info('{}: choose allhic optimization (LIS length / group length = {})'.format(prefix, max_sum / group_len))
+            return False
+        else:
+            if lis_len_ratio > max_lis_len_ratio:
+                max_lis_len_ratio = lis_len_ratio
+            fast_sort_ctg_list = fast_sort_ctg_list[1:] + [fast_sort_ctg_list[0]]
+            fast_sort_ori_list = fast_sort_ori_list[1:] + [fast_sort_ori_list[0]]
+
+    logger.info('{}: choose fast sorting (maximum LIS length / group length = {})'.format(prefix, lis_len_ratio))
+    return True
+
+
 def run_haphic_sorting(args, group, fa_dict, group_specific_data, group_param, allhic):
 
     prefix, clm = group_param
 
     only_one_contig = False
+
+    output_sav = False
 
     if not args.skip_fast_sort:
 
@@ -654,6 +740,14 @@ def run_haphic_sorting(args, group, fa_dict, group_specific_data, group_param, a
     # call a modified version of ALLHiC for hotstart optimization (--resume)
     if not args.skip_allhic and not only_one_contig:
         run_allhic_optimization(args, group, prefix, clm, allhic)
+        # comaprison is needed only if fast sort is not skipped
+        if not args.skip_fast_sort:
+            output_sav = compare_fast_sort_and_allhic(prefix, fa_dict)
+
+    if output_sav:
+        os.symlink('../{}.tour.sav'.format(prefix), os.path.join('final_tours', '{}.tour'.format(prefix)))
+    else:
+        os.symlink('../{}.tour'.format(prefix), os.path.join('final_tours', '{}.tour'.format(prefix)))
 
 
 def check_exceptions(result_list):
@@ -762,6 +856,11 @@ def run(args, log_file=None):
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
 
+    # Check parameters
+    if args.skip_fast_sort and args.skip_allhic:
+        logger.error('Conflict parameters: --skip_fast_sort and --skip_allhic')
+        raise RuntimeError('Conflict parameters')
+
     # quick view mode
     if args.quick_view:
         args.skip_allhic = True
@@ -822,6 +921,8 @@ def run(args, log_file=None):
     if not args.skip_allhic:
         # for ALLHiC logs
         os.mkdir('allhic_logs')
+
+    os.mkdir('final_tours')
 
     # with multiprocessing
     if processes > 1:

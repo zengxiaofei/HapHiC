@@ -454,7 +454,7 @@ def haphic_sort(args):
     os.chdir('..')
 
     # modify args for the next step
-    args.tours = [f for f in glob.glob(abspath(pathjoin(DIR, '*.tour')))]
+    args.tours = [f for f in glob.glob(abspath(pathjoin(DIR, 'final_tours', '*.tour')))]
 
 
 def haphic_build(args):

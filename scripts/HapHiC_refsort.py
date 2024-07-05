@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def parse_agp(agp, logger):
+def parse_agp(agp):
 
     logger.info('Parsing input AGP file...')
 
@@ -77,7 +77,7 @@ def get_max_ovl_group(groups, ctg_aln_start, ctg_aln_end):
     return max_ovl_group
 
 
-def parse_paf(paf, ctg_group_dict, logger):
+def parse_paf(paf, ctg_group_dict):
 
     logger.info('Parsing input PAF file...')
 
@@ -129,7 +129,7 @@ def parse_paf(paf, ctg_group_dict, logger):
     return group_ref_dict
 
 
-def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, ref_order, logger):
+def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, ref_order):
 
     logger.info('Ordering and orienting scaffolds based on alignments...')
 
@@ -281,9 +281,9 @@ def run(args, log_file=None):
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
 
-    ctg_group_dict, group_agp_lines, group_len_dict, one_ctg_groups = parse_agp(args.agp, logger)
-    group_ref_dict = parse_paf(args.paf, ctg_group_dict, logger)
-    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args.ref_order, logger)
+    ctg_group_dict, group_agp_lines, group_len_dict, one_ctg_groups = parse_agp(args.agp)
+    group_ref_dict = parse_paf(args.paf, ctg_group_dict)
+    order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args.ref_order)
 
 
 def main():

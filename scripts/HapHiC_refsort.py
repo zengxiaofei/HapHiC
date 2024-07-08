@@ -280,6 +280,8 @@ def run(args, log_file=None):
     start_time = time.time()
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
+    if __name__ == '__main__':
+        logger.info('Command: {}'.format(' '.join(sys.argv)))
 
     ctg_group_dict, group_agp_lines, group_len_dict, one_ctg_groups = parse_agp(args.agp)
     group_ref_dict = parse_paf(args.paf, ctg_group_dict)

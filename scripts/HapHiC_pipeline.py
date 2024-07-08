@@ -482,6 +482,7 @@ def main():
     start_time = time.time()
     logger.info('Pipeline started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
+    logger.info('Command: {}'.format(' '.join(sys.argv)))
 
     # check steps
     steps = {int(step) for step in args.steps.split(',')}

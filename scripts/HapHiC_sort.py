@@ -855,6 +855,8 @@ def run(args, log_file=None):
     start_time = time.time()
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
+    if __name__ == '__main__':
+        logger.info('Command: {}'.format(' '.join(sys.argv)))
 
     # Check parameters
     if args.skip_fast_sort and args.skip_allhic:

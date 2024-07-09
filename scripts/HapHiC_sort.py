@@ -512,7 +512,7 @@ def fast_sort(args, fa_dict, group_specific_data, prefix):
     path_list = ctgs.copy()
     # flank_HT_dict is used to store the flank region length of scaffolds
     # In the first round of iterations, it's empty.
-    # Flank_HT_dict will be updated at the end of each round.
+    # flank_HT_dict will be updated at the end of each round.
     flank_HT_dict = dict()
 
     # a set to store removed contigs / scaffolds
@@ -855,8 +855,7 @@ def run(args, log_file=None):
     start_time = time.time()
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
-    if __name__ == '__main__':
-        logger.info('Command: {}'.format(' '.join(sys.argv)))
+    logger.info('Command: {}'.format(' '.join(sys.argv)))
 
     # Check parameters
     if args.skip_fast_sort and args.skip_allhic:

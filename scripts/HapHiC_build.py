@@ -248,8 +248,7 @@ def run(args, log_file=None):
     start_time = time.time()
     logger.info('Program started, HapHiC version: {} (update: {})'.format(__version__, __update_time__))
     logger.info('Python version: {}'.format(sys.version.replace('\n', '')))
-    if __name__ == '__main__':
-        logger.info('Command: {}'.format(' '.join(sys.argv)))
+    logger.info('Command: {}'.format(' '.join(sys.argv)))
 
     # a simple parameter check
     if os.path.basename(args.fasta) == 'corrected_asm.fa' and not args.corrected_ctgs:

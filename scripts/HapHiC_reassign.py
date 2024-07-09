@@ -17,6 +17,9 @@ import gzip
 from collections import defaultdict
 from sklearn.cluster import AgglomerativeClustering
 
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+
 from HapHiC_cluster import parse_fasta, parse_gfa, stat_fragments, remove_allelic_HiC_links, dict_to_matrix
 
 from _version import __version__, __update_time__

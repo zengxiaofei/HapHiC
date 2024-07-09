@@ -54,7 +54,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 ## <span id="installation">Installation</span>
 
-HapHiC has been tested and validated on servers running Linux, equipped with either Intel Xeon or AMD EPYC CPUs.
+HapHiC has been tested and validated on servers running Linux, equipped with either Intel Xeon, AMD EPYC, or Hygon C86 CPUs.
 
 ```bash
 # (1) Download HapHiC from GitHub
@@ -62,6 +62,7 @@ $ git clone https://github.com/zengxiaofei/HapHiC.git
 
 # (2) Resolve dependencies
 # We strongly recommend using conda to install dependencies. If you prefer manual installation, refer to HapHiC/conda_env/create_conda_env_py310.sh
+# We have also included additional environments for Python 3.11 and 3.12 in the directory HapHiC/conda_env/
 $ conda env create -f HapHiC/conda_env/environment_py310.yml
 # Activate the HapHiC conda environment
 $ conda activate haphic # or: source /path/to/conda/bin/activate haphic
@@ -88,6 +89,17 @@ $ bwa mem -5SP -t 28 asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblast
 
 # (2) Filter the alignments with MAPQ 1 (mapping quality ≥ 1) and NM 3 (edit distance < 3)
 $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view - -b -@ 14 -o HiC.filtered.bam
+```
+
+HapHiC also supports Pore-C data:
+
+```bash
+# (1) Align Pore-C data to the assembly using minimap2
+$ minimap2 -x map-ont -a -t 28 asm.fa /path/to/porec_reads_fq.gz | samtools view - -b -@ 14 -o map.bam
+
+# (2) Convert `map.bam` to a format compatible with HapHiC
+# Finally, you will obtain a new BAM file named `porec_paired.bam`, which should be used as the input BAM file for HapHiC.
+$ /path/to/HapHiC/utils/prepare_paired_bam_minimap2.py map.bam
 ```
 
 **Notes:**

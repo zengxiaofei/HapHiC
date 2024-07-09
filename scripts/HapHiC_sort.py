@@ -25,6 +25,9 @@ from networkx import Graph, connected_components, shortest_path
 from networkx import tree as nxtree
 from scipy.sparse import coo_matrix
 
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+
 from _version import __version__, __update_time__
 
 logging.basicConfig(
@@ -584,7 +587,7 @@ def fast_sort(args, fa_dict, group_specific_data, prefix):
 
             # store the path
             source, target = ends_list
-            path = shortest_path(tree)[source][target]
+            path = dict(shortest_path(tree))[source][target]
             path_len = get_len(tuple([index_HT_dict[i] for i in path]), fa_dict)
             path_list.append((path, path_len))
 

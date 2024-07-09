@@ -94,8 +94,8 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 HapHiC also supports Pore-C data:
 
 ```bash
-# (1) Align Pore-C data to the assembly using minimap2
-$ minimap2 -x map-ont -a -t 28 asm.fa /path/to/porec_reads_fq.gz | samtools view - -b -@ 14 -o map.bam
+# (1) Align Pore-C data (FASTA/FASTQ) to the assembly using minimap2
+$ minimap2 -x map-ont -a -t 28 asm.fa /path/to/porec_reads.gz | samtools view - -b -@ 14 -o map.bam
 
 # (2) Convert `map.bam` to a format compatible with HapHiC
 # Finally, you will obtain a new BAM file named `porec_paired.bam`, which should be used as the input BAM file for HapHiC.

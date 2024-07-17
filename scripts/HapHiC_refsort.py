@@ -199,7 +199,7 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                     order = group_start + aln_mid
                 else:
                     assert orient * ctg_orient == -1
-                    order = - (group_end - aln_mid)
+                    order = - (group_start + aln_mid)
                 aln_list.append((aln, order, aln_len, ref_mid))
 
         aln_order_list, aln_len_list = [], []
@@ -213,6 +213,8 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
         max_sum_f, lis_aln_list_f = find_lis(aln_order_list, aln_len_list, forward=True)
         max_sum_r, lis_aln_list_r = find_lis(aln_order_list, aln_len_list, forward=False)
 
+        logger.info('group: {}\tforward LIS: {}\treverse LIS: {}'.format(group, max_sum_f, max_sum_r))
+
         if max_sum_f > max_sum_r:
             ref_groups_dict[max_ref].append((group, 1, max_sum_f))
         else:
@@ -222,7 +224,7 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
         order_list = sorted(ref_groups_dict.keys())
     else:
         order_list = ref_order.split(',')
-    
+
     output_groups = set()
     for ref in order_list:
         ref_groups_dict[ref].sort(key=lambda x: x[-1], reverse=True)

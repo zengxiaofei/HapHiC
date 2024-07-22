@@ -1022,7 +1022,7 @@ def break_and_update_ctgs(
         else:
             assert ':' in ctg
             ctg, pos_range = ctg.rsplit(':', 1)
-            start, end = pos_range.split('_')
+            start, end = pos_range.split('-')
 
         if coord >= pos_shift_list[0]:
             return '{}:{}-{}'.format(ctg, start+pos_shift_list[0], end), coord-pos_shift_list[0]

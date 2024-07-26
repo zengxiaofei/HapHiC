@@ -285,7 +285,7 @@ For more information, run `haphic build --help`.
 
 ## <span id="examples">Examples</span>
 
-HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://www.biorxiv.org/content/biorxiv/early/2023/11/18/2023.11.18.567668/DC1/embed/media-1.pdf?download=true) of our [paper](https://www.biorxiv.org/content/10.1101/2023.11.18.567668v1.full).
+HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://www.biorxiv.org/content/biorxiv/early/2023/11/18/2023.11.18.567668/DC1/embed/media-1.pdf?download=true) in our [paper](https://www.biorxiv.org/content/10.1101/2023.11.18.567668v1.full).
 
 | Species              | Karyotype    | Haplotype-resolved | Assembly size (Gb) | Contig N50 (Mb) | Number of contigs | Hi-C depth after filtering | Wall time (min) | Peak RAM (GiB) |
 | :-------------------- | ------------ | ------------------ | ------------------ | --------------- | ----------------- | -------------------------- | --------------- | -------------- |
@@ -457,7 +457,7 @@ To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**)
 # The preset can be `asm5` if the reference genome is well-assembled from the same species
 $ minimap2 -x asm20 ref.fa asm.fa --secondary=no -t 28 -o asm_to_ref.paf
 # `haphic refsort` can also be compatible with other aligners, like wfmash
-$ wfmash ref.fa asm.fa -m -n 1 -S 1 -t 28 > asm_to_ref.paf
+$ wfmash ref.fa asm.fa -m -n 1 -S 1 -t 28 | cut -f 1-6,8- > asm_to_ref.paf
 ```
 
 By using the `haphic refsort` command, you can generate a new AGP file based on the PAF file:

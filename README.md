@@ -112,13 +112,17 @@ $ /path/to/HapHiC/utils/prepare_paired_bam_minimap2.py map.bam
 
 ### <span id="pipeline">Run HapHiC scaffolding pipeline</span>
 
-**(i) One-line command.** HapHiC provides a one-line command `haphic pipeline` to execute the entire scaffolding pipeline. The required parameters are 1) `asm.fa` , your genome assembly file in FASTA format; 2) `HiC.filtered.bam` , the BAM file prepared in the previous step (the .pairs file output by chromap is also acceptable since version 1.0.3); 3) `nchrs` , the number of chromosomes present in the assembly, and also the expected number of output scaffolds.
+**(i) One-line command.** HapHiC provides a one-line command `haphic pipeline` to execute the entire scaffolding pipeline. The required parameters are：
+
+1) `asm.fa`, your genome assembly file in FASTA format.
+2) `HiC.filtered.bam`, the BAM file prepared in the previous step (the .pairs file output by chromap is also acceptable since version 1.0.3).
+3) `nchrs`, the number of chromosomes present in the assembly, and also the expected number of output scaffolds.
 
 ```bash
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs
 ```
 
-**(ii) Restriction site.** The default restriction site is `GATC`  (MboI/DpnII). You can modify this  using the `--RE` parameter. If you are unsure or if your Hi-C library was constructed without restriction enzymes (REs), it is acceptable to leave it as the default.
+**(ii) Restriction site.** The default restriction site is `GATC` (MboI/DpnII). You can modify this  using the `--RE` parameter. If you are unsure or if your Hi-C library was constructed without restriction enzymes (REs), it is acceptable to leave it as the default.
 
 ```bash
 # For HindIII
@@ -142,6 +146,8 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --correct_nround
 # For haplotype-phased assembles of autotetraploids, set the parameter to 4
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --remove_allelic_links 4
 ```
+
+**Note:** If your input assembly is haplotype-phased and the Hi-C reads are aligned using other methods like chromap, we also recommend including this parameter to mitigate the adverse effects of incorrect mapping.
 
 **(v) Performance.** Use `--threads` to set the number of threads for BAM file reading, and `--processes` to create multiple processes for contig ordering and orientation. For example:
 
@@ -248,7 +254,8 @@ For more information, run `haphic sort --help`.
 **Main outputs**
 
 * `group*.tour.sav`: The fast sorting result of contigs within each group.
-* `group*.tour`: The final contig ordering and orientation result for each group after ALLHiC optimization.
+* `group*.tour`: The contig ordering and orientation result for each group after ALLHiC optimization.
+* `final_tours/group*.tour`: The final contig ordering and orientation results.
 
 ### <span id="step4">[Step 4] Building pseudomolecules</span>
 
@@ -257,13 +264,13 @@ The final step is to build the scaffolds (pseudomolecules) using the chromosome 
 **If assembly correction was not performed**:
 
 ```bash
-$ /path/to/HapHiC/haphic build asm.fa asm.fa HiC.filtered.bam group*.tour
+$ /path/to/HapHiC/haphic build asm.fa asm.fa HiC.filtered.bam final_tours/group*.tour
 ```
 
 **If assembly correction has been performed**, use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa`. Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
 
 ```bash
-$ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam group*.tour --corrected_ctgs corrected_ctgs.txt
+$ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam final_tours/group*.tour --corrected_ctgs corrected_ctgs.txt
 ```
 
 **Note:**  
@@ -479,7 +486,7 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 ## <span id="faqs">Frequently asked questions (FAQs)</span>
 
-* **How can I do when the anchoring rate is too low?**
+* **What can I do when the anchoring rate is too low?**
 
   There are three parameters controlling the anchoring rate through the reassignment step: `--min_RE_sites` , `--min_links`  , and `--min_link_density` . By default, these parameters are set to 25, 25, and 0.0001, respectively. However, both the contig contiguity and Hi-C sequencing depth vary across different projects. By checking the `*statistics.txt` files in `01.cluster/inflation_*` , you can find better values for these parameters to get a scaffolding result with a higher anchoring rate.
 
@@ -489,7 +496,7 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
   You could try [quick view](#quick_view). In this mode, HapHiC ignores the `nchrs` parameter (you can fill in any integer), and scaffold contigs without clustering (similar to `*.0.hic` in 3D-DNA). After visualizing the results in Juicebox, you can count the number of chromosomes based on the Hi-C contact map, and rerun HapHiC pipeline with this number. Alternatively, you can manually curate the assembly and split chromosomes in Juicebox by yourself.
 
-* **How can I do when I see "It seems that some chromosomes were grouped together" in the clustering step?**
+* **What can I do when I see "It seems that some chromosomes were grouped together" or "The maximum number of clusters is even less than the expected number of chromosomes" in the clustering step?**
 
   The question is complicated. HapHiC recommends a "best" inflation parameter based on the `nchrs` you specified and the distribution of group lengths. Several factors could cause this problem.
 

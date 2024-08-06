@@ -518,11 +518,11 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 ## <span id="citing">Citing HapHiC</span>
 
-If you have used HapHiC in your work, please cite our paper published on Nature Plants:
+If you have used HapHiC in your work, please cite our paper published in Nature Plants:
 
 > Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01755-3](https://doi.org/10.1038/s41477-024-01755-3)
 
-There is also a Research Briefing available on Nature Plants:
+There is also a Research Briefing available in Nature Plants:
 
 > Xiaofei Zeng, Guoan Chen. (2024) Achieving de novo scaffolding of chromosome-level haplotypes using Hi-C data. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01756-2](https://doi.org/10.1038/s41477-024-01756-2)
 

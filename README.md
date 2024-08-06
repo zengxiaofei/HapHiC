@@ -292,7 +292,7 @@ For more information, run `haphic build --help`.
 
 ## <span id="examples">Examples</span>
 
-HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://www.biorxiv.org/content/biorxiv/early/2023/11/18/2023.11.18.567668/DC1/embed/media-1.pdf?download=true) in our [paper](https://www.biorxiv.org/content/10.1101/2023.11.18.567668v1.full).
+HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41477-024-01755-3/MediaObjects/41477_2024_1755_MOESM1_ESM.pdf) in our [paper](https://doi.org/10.1038/s41477-024-01755-3).
 
 | Species              | Karyotype    | Haplotype-resolved | Assembly size (Gb) | Contig N50 (Mb) | Number of contigs | Hi-C depth after filtering | Wall time (min) | Peak RAM (GiB) |
 | :-------------------- | ------------ | ------------------ | ------------------ | --------------- | ----------------- | -------------------------- | --------------- | -------------- |
@@ -518,15 +518,17 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 ## <span id="citing">Citing HapHiC</span>
 
-If you use HapHiC in your work, please cite our preprint on bioRxiv:
+If you have used HapHiC in your work, please cite our paper published on Nature Plants:
 
-> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. (2023) Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *bioRxiv*, 2023.11.18.567668.
-> doi: [https://doi.org/10.1101/2023.11.18.567668](https://doi.org/10.1101/2023.11.18.567668)
+> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01755-3](https://doi.org/10.1038/s41477-024-01755-3)
 
-If you use the optimization function for contig ordering and orientation (by default), please also cite ALLHiC:
+There is also a Research Briefing available on Nature Plants:
 
-> Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845.
-> doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)
+> Xiaofei Zeng, Guoan Chen. (2024) Achieving de novo scaffolding of chromosome-level haplotypes using Hi-C data. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01756-2](https://doi.org/10.1038/s41477-024-01756-2)
+
+If you have used the optimization function for contig ordering and orientation, please cite ALLHiC as well:
+
+> Xingtan Zhang, Shengcheng Zhang, Qian Zhao, Ray Ming, Haibao Tang. (2019) Assembly of allele-aware, chromosomal-scale autopolyploid genomes based on Hi-C data. *Nature Plants*, 5:833-845. doi: [https://doi.org/10.1038/s41477-019-0487-8](https://doi.org/10.1038/s41477-019-0487-8)
 
 
 

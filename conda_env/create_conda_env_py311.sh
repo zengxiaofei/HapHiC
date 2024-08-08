@@ -2,19 +2,21 @@
 
 # Author: Xiaofei Zeng
 # Email: xiaofei_zeng@whu.edu.cn
-# Creation Time: 2023-04-04 19:53
+# Creation Time: 2024-08-08 11:39
 
+
+
+conda config --add channels conda-forge
 
 # There is a serious memory leaking problem in Python 3.11.0
-conda create -n haphic_py311 python=3.11.2
-conda activate haphic_py311
+conda create -n haphic python=3.11.9
+conda activate haphic
 
-pip3 install numpy scipy matplotlib
-pip3 install scikit-learn networkx pysam
+conda install mkl
+conda install sparse_dot_mkl "numpy<2.0.0"
 
-conda install -c intel mkl
-conda config --add channels conda-forge
-conda install sparse_dot_mkl
+pip3 install scipy matplotlib
+pip3 install scikit-learn networkx "pysam==0.20.0"
 
 pip3 install portion
 

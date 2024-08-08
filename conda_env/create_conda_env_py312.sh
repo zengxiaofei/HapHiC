@@ -6,14 +6,13 @@
 
 conda config --add channels conda-forge
 
-conda create -n haphic_py312 python=3.12.4
-conda activate haphic_py312
+conda create -n haphic python=3.12.4
+conda activate haphic
 
 conda install mkl
 
 conda install sparse_dot_mkl "numpy<2.0.0"
 
-# pip3 install "numpy<2.0"
 pip3 install scipy matplotlib
 
 pip3 install scikit-learn networkx

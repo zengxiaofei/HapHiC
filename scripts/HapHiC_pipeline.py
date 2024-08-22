@@ -433,19 +433,20 @@ def haphic_sort(args):
 
     if args.quick_view:
         commands.append('--quick_view')
-    if args.skip_fast_sort:
-        commands.append('--skip_fast_sort')
-    commands.extend(['--flanking_region', str(args.flanking_region)])
-    commands.extend(['--density_cal_method', args.density_cal_method])
-    commands.extend(['--confidence_cutoff', str(args.confidence_cutoff)])
-    if args.skip_allhic:
-        commands.append('--skip_allhic')
-    if args.skipGA:
-        commands.append('--skipGA')
-    commands.extend([
-        '--mutprob', str(args.mutprob), '--ngen', str(args.ngen), 
-        '--npop', str(args.npop), '--seed', str(args.seed)])
-    commands.extend(['--processes', str(args.processes)])
+    else:
+        if args.skip_fast_sort:
+            commands.append('--skip_fast_sort')
+        commands.extend(['--flanking_region', str(args.flanking_region)])
+        commands.extend(['--density_cal_method', args.density_cal_method])
+        commands.extend(['--confidence_cutoff', str(args.confidence_cutoff)])
+        if args.skip_allhic:
+            commands.append('--skip_allhic')
+        if args.skipGA:
+            commands.append('--skipGA')
+        commands.extend([
+            '--mutprob', str(args.mutprob), '--ngen', str(args.ngen), 
+            '--npop', str(args.npop), '--seed', str(args.seed)])
+        commands.extend(['--processes', str(args.processes)])
     if args.verbose:
         commands.append('--verbose')
 

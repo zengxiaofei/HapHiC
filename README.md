@@ -452,6 +452,13 @@ $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plo
 
 To change the colormap, origin, border style, and normalization method for the contact maps, refer to the examples provided in the figure above.
 
+Do you think these contact maps look cool? This function can also visualize results from other scaffolders! You only need to prepare a BAM file (by mapping and filtering Hi-C reads) for your chromosome-level FASTA file and create a corresponding AGP file:
+
+```bash
+# This script generates an AGP file for your FASTA file
+$ /path/to/HapHiC/utils/mock_agp_file.py chr_asm.fa > chr_asm.agp
+# Then, you can visualize your results using haphic plot with the BAM file and the AGP file
+```
 
 
 ## <span id="refsort">Order and orient whole scaffolds using a reference genome</span>
@@ -520,11 +527,11 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 If you have used HapHiC in your work, please cite our paper published in Nature Plants:
 
-> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01755-3](https://doi.org/10.1038/s41477-024-01755-3)
+> Xiaofei Zeng, Zili Yi, Xingtan Zhang, Yuhui Du, Yu Li, Zhiqing Zhou, Sijie Chen, Huijie Zhao, Sai Yang, Yibin Wang, Guoan Chen. Chromosome-level scaffolding of haplotype-resolved assemblies using Hi-C data without reference genomes. *Nature Plants*, 10:1184-1200. doi: [https://doi.org/10.1038/s41477-024-01755-3](https://doi.org/10.1038/s41477-024-01755-3)
 
 There is also a Research Briefing available in Nature Plants:
 
-> Xiaofei Zeng, Guoan Chen. (2024) Achieving de novo scaffolding of chromosome-level haplotypes using Hi-C data. *Nature Plants*. doi: [https://doi.org/10.1038/s41477-024-01756-2](https://doi.org/10.1038/s41477-024-01756-2)
+> Xiaofei Zeng, Guoan Chen. (2024) Achieving de novo scaffolding of chromosome-level haplotypes using Hi-C data. *Nature Plants*, 10:1157-1158. doi: [https://doi.org/10.1038/s41477-024-01756-2](https://doi.org/10.1038/s41477-024-01756-2)
 
 If you have used the optimization function for contig ordering and orientation, please cite ALLHiC as well:
 

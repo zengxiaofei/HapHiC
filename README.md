@@ -20,6 +20,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
+* Version 1.0.5 (2024.08.26): There is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
 * Version 1.0.5 (2024.07.05): Improved stability in ordering and orientation of contigs through a comparison of fast sorting and ALLHiC optimization.
 * Version 1.0.4 (2024.07.03): Add a `haphic refsort` command for [ordering and orienting whole scaffolds according to a reference genome](#refsort).
 * Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap).
@@ -403,7 +404,7 @@ $ bash juicebox.sh
 
 **Notes:** 
 
-* In the output log file `out_JBAT.log` , you can find the corresponding scale factor, e.g., `[I::main_pre] scale factor: 2` . To ensure proper alignment of Hi-C contact maps with the boundaries of scaffolds and superscaffolds in Juicebox, please set your own scale factor in Juicebox through the menu `Assembly > Set Scale` .
+* Since HapHiC verion 1.0.6, there is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
 * For large genomes, it is necessary to adjust the memory settings in the juicebox.sh file for Java (e.g. set to `-Xmx64G` or higher) to avoid out-of-memory errors or to improve the execution speed.
 
 After manual curation in Juicebox, you will obtain the modified assembly file `out_JBAT.review.assembly` . To generate the final FASTA file for the scaffolds:

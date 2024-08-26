@@ -1326,6 +1326,21 @@ def parse_pairs_for_correction(fa_dict, args):
     return ctg_cov_dict, ctg_link_pos_dict
 
 
+def check_sorting_order(fbam):
+
+    hd_line = fbam.header.get('HD')
+
+    if hd_line is not None and 'SO' in hd_line:
+        if hd_line['SO'] in {'unsorted', 'queryname'}:
+            logger.info('The sorting order of the BAM file is {}'.format(hd_line['SO']))
+            return
+        elif hd_line['SO'] == 'coordinate':
+            logger.error('The sorting order of the BAM file is {}. It should be unsorted or name-sorted'.format(hd_line['SO']))
+            raise RuntimeError('The sorting order of the BAM file is {}. It should be unsorted or name-sorted'.format(hd_line['SO']))
+
+    logger.warning('The sorting order of the BAM file is unknown, but the program will continue')
+
+
 def parse_bam_for_correction(fa_dict, args):
 
     """parse BAM file for contig correction"""
@@ -1343,7 +1358,7 @@ def parse_bam_for_correction(fa_dict, args):
     format_options = [b'filter=flag.read1 && refid == mrefid']
 
     with pysam.AlignmentFile(args.alignments, mode='rb', threads=args.threads, format_options=format_options) as f:
-
+        check_sorting_order(f)
         for aln in f:
 
             ref = aln.reference_name
@@ -1420,7 +1435,7 @@ def bam_generator_for_correction_ctg(bam, threads, format_options, final_break_p
             n += 1
 
     with pysam.AlignmentFile(bam, mode='rb', threads=threads, format_options=format_options) as f:
-
+        check_sorting_order(f)
         for aln in f:
             ref, mref, pos, mpos = (
                     aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start)
@@ -1489,7 +1504,7 @@ def bam_generator_for_correction(bam, threads, format_options, final_break_pos_d
             n += 1
 
     with pysam.AlignmentFile(bam, mode='rb', threads=threads, format_options=format_options) as f:
-
+        check_sorting_order(f)
         for aln in f:
             ref, mref, pos, mpos = (
                     aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start)
@@ -1555,7 +1570,7 @@ def bam_generator(bam, threads, format_options):
     # just a wrapper of pysam.AlignmentFile used to keep the style of Hi-C link parsing consistent
 
     with pysam.AlignmentFile(bam, mode='rb', threads=threads, format_options=format_options) as f:
-
+        check_sorting_order(f)
         for aln in f:
             yield aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start
 
@@ -2726,7 +2741,7 @@ def run(args, log_file=None):
     if args.aln_format == 'auto':
         detect_format(args)
 
-    if args.correct_nrounds:
+    if args.correct_nrounds and args.ul:
         args.ul = None
         logger.warning('Ultra-long data are not supported now when assembly correction is enabled')
 

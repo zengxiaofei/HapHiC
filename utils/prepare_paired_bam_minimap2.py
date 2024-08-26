@@ -42,6 +42,9 @@ def parse_bam_for_falign(bam, mapq, percent_identity, alignment_length, threads)
                 aln1_copy.next_reference_start = aln2.reference_start
                 aln2_copy.next_reference_start = aln1.reference_start
 
+                aln1_copy.set_tag('SA', None)
+                aln2_copy.set_tag('SA', None)
+
                 fout.write(aln1_copy)
                 fout.write(aln2_copy)
 

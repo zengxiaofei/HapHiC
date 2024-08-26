@@ -20,7 +20,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 
 **Recent updates:**
 
-* Version 1.0.5 (2024.08.26): There is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
+* Version 1.0.6 (2024.08.26): There is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
 * Version 1.0.5 (2024.07.05): Improved stability in ordering and orientation of contigs through a comparison of fast sorting and ALLHiC optimization.
 * Version 1.0.4 (2024.07.03): Add a `haphic refsort` command for [ordering and orienting whole scaffolds according to a reference genome](#refsort).
 * Version 1.0.3 (2024.03.21): Add support for the [pairs format](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md) used in [chromap](https://github.com/haowenz/chromap).

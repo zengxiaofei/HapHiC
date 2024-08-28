@@ -391,7 +391,7 @@ def haphic_cluster(args):
                 return None
 
     raise RuntimeError(
-            'Pipeline Abortion: Inflation recommendation failed. It seems that '
+            'Pipeline Aborted: Inflation recommendation failed. It seems that '
             'some chromosomes were grouped together, or the maximum number of '
             'clusters is even less than the expected number of chromosomes. For '
             'more details, please check out the logs.')

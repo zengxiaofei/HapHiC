@@ -330,7 +330,7 @@ $ /path/to/HapHiC/haphic pipeline p_utg.fa HiC.filtered.bam nchrs --gfa p_utg.gf
 $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa"
 
 # The weight can be set to 0 to ignore the phasing information. You can also set it between 0 and 1 to run HapHiC as a double check. In the latter case, contigs from different haplotypes might be clustered together
-$ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa" ---phasing_weight 0
+$ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa" --phasing_weight 0
 ```
 
 

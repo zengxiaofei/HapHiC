@@ -102,20 +102,23 @@ def parse_agp(agp, bin_size):
     return ctg_dict, ctg_aln_dict, group_size_dict, frag_set, group_frag_dict
 
 
-def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size, min_len):
+def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size, min_len, specified_scaffolds):
 
 
     logger.info('Generating an empty contact matrix...')
 
     total_n_bins = 0
     min_len *= 1000000
+    
+    if specified_scaffolds:
+        scaffolds = specified_scaffolds.split(',')
 
     # group bin ID to total bin ID
     group_to_total_bin_dict = dict()
     group_list = list()
 
     for group, size in group_size_dict.items():
-        if size >= min_len:
+        if size >= min_len and ((specified_scaffolds and group in scaffolds) or not specified_scaffolds):
             group_n_bins = size // bin_size + 1
             for n in range(group_n_bins):
                 group_to_total_bin_dict[(group, n)] = total_n_bins + n
@@ -234,9 +237,11 @@ def load_pickle(pickle_file, args):
     with open(pickle_file, 'rb') as fpkl:
         contact_matrix, old_args = pickle.load(fpkl)
         # check parameters
-        if old_args.bin_size != args.bin_size or old_args.min_len != args.min_len:
-            error_message = ('The input parameters (--bin_size {} --min_len {}) are not consistent with those used to generate `contact_map.pkl` '
-                            '(--bin_size {} --min_len {})'.format(args.bin_size, args.min_len, old_args.bin_size, old_args.min_len))
+        if old_args.bin_size != args.bin_size or old_args.min_len != args.min_len or old_args.specified_scaffolds != args.specified_scaffolds:
+            error_message = ('The input parameters (--bin_size {} --min_len {} --specified_scaffolds {}) are not consistent with '
+                             'those used to generate `contact_map.pkl` (--bin_size {} --min_len {} --specified_scaffolds {})'.format(
+                                args.bin_size, args.min_len, args.specified_scaffolds, 
+                                old_args.bin_size, old_args.min_len, old_args.specified_scaffolds))
             logger.error(error_message)
             raise Exception(error_message)
 
@@ -669,6 +674,9 @@ def parse_arguments():
             '--bin_size', type=int, default=500, 
             help='bin size for generating contact matrix, default: %(default)s (kbp)')
     parser.add_argument(
+            '--specified_scaffolds', default=None,
+            help='specify scaffolds to visualize, separated with commas, default: %(default)s. When this parameter is set, the `--min_len` parameter will be disabled')
+    parser.add_argument(
             '--min_len', type=int, default=1, 
             help='minimum scaffold length for visualization, default: %(default)s (Mbp)')
     parser.add_argument(
@@ -727,6 +735,10 @@ def parse_arguments():
             help='number of threads for reading BAM file, default: %(default)s')
 
     args = parser.parse_args()
+    
+    # When this parameter is set, the `--min_len` parameter will be disabled
+    if args.specified_scaffolds:
+        args.min_len = 0
 
     return args
 
@@ -753,7 +765,7 @@ def main():
     ctg_dict, ctg_aln_dict, group_size_dict, frag_set, group_frag_dict = parse_agp(args.agp, bin_size)
 
     contact_matrix, group_to_total_bin_dict, group_list, ctg_set = generate_contact_matrix(
-            group_size_dict, frag_set, group_frag_dict, bin_size, args.min_len)
+            group_size_dict, frag_set, group_frag_dict, bin_size, args.min_len, args.specified_scaffolds)
 
     if args.alignments.endswith('.pkl'):
         contact_matrix = load_pickle(args.alignments, args)

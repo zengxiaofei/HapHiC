@@ -65,7 +65,8 @@ def find_repeat(fa_dict, repeat, contigs, show_uplot):
     reverse_two_repeats = revcom(repeat) * 2
     reverse_two_repeats_reverse = reverse_two_repeats[::-1]
     
-    print('Seq_ID\tSeq_len\tNumber_of_{0}/{1}\tNumber_of_{0}/{1}_per_Mb\tLeftmost_{0}_pos\tRightmost_{1}_pos\tLeftmost_relative_pos\tRightmost_relative_pos'.format(forward_two_repeats, reverse_two_repeats))
+    print('Seq_ID\tSeq_len\tNumber_of_{0}/{1}\tNumber_of_{0}/{1}_per_Mb\tLeftmost_{0}_pos\tRightmost_{1}_pos\tLeftmost_relative_pos\tRightmost_relative_pos'.format(
+        forward_two_repeats, reverse_two_repeats))
 
     for ID in ID_list:
         seq_len = len(fa_dict[ID])
@@ -73,15 +74,18 @@ def find_repeat(fa_dict, repeat, contigs, show_uplot):
 
         if forward_two_repeats in fa_dict[ID]:
             start_pos = fa_dict[ID].index(forward_two_repeats) + 1
+            relative_start_pos = '{:.4f}'.format(start_pos / seq_len)
         else:
-            start_pos = 'NA'
+            start_pos, relative_start_pos = 'NA', 'NA'
 
         if reverse_two_repeats in fa_dict[ID]:
             end_pos = seq_len - (fa_dict[ID][::-1].index(reverse_two_repeats_reverse) + 1)
+            relative_end_pos = '{:.4f}'.format(end_pos / seq_len)
         else:
-            end_pos = 'NA'
+            end_pos, relative_end_pos = 'NA', 'NA'
 
-        print('{}\t{}\t{}\t{:.4f}\t{}\t{}\t{:.4f}\t{:.4f}'.format(ID, seq_len, nrepeats, nrepeats/seq_len*1000000, start_pos, end_pos, start_pos / seq_len, end_pos / seq_len))
+        print('{}\t{}\t{}\t{:.4f}\t{}\t{}\t{}\t{}'.format(
+            ID, seq_len, nrepeats, nrepeats/seq_len*1000000, start_pos, end_pos, relative_start_pos, relative_end_pos))
 
         if not show_uplot:
             continue

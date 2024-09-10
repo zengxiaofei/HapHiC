@@ -464,7 +464,7 @@ $ /path/to/HapHiC/utils/mock_agp_file.py chr_asm.fa > chr_asm.agp
 
 ## <span id="refsort">Order and orient whole scaffolds using a reference genome</span>
 
-HapHiC has introduced a separate command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
+HapHiC has introduced a stand-alone command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
 
 To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
 

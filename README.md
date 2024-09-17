@@ -464,7 +464,7 @@ $ /path/to/HapHiC/utils/mock_agp_file.py chr_asm.fa > chr_asm.agp
 
 ## <span id="refsort">Order and orient whole scaffolds using a reference genome</span>
 
-HapHiC has introduced a stand-alone command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
+HapHiC has introduced a separate command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
 
 To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
 
@@ -484,7 +484,7 @@ $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf > scaffolds.refsort.a
 $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order chr1,chr2,chr3,chr4,... > scaffolds.refsort.agp
 ```
 
-The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that this function will **NOT** alter your scaffolds, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
+The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
 
 Here is an example of the autotetraploid sugarcane Np-X assembly:
 

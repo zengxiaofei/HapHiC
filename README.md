@@ -453,7 +453,7 @@ $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plo
 
 To change the colormap, origin, border style, and normalization method for the contact maps, refer to the examples provided in the figure above.
 
-**Note:** Do you think these contact maps look cool? This function can also visualize results from other scaffolders! You only need to prepare a BAM file ([by mapping and filtering Hi-C reads](#align-hi-c-data-to-the-assembly)) for your chromosome-level FASTA file and create a corresponding AGP file:
+**Do you think these contact maps look cool? This function can also visualize results from other scaffolders!** You only need to prepare a BAM file ([by mapping and filtering Hi-C reads](#align-hi-c-data-to-the-assembly)) for your chromosome-level FASTA file and create a corresponding AGP file:
 
 ```bash
 # This script generates an AGP file for your FASTA file

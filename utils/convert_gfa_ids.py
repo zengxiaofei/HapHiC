@@ -7,6 +7,7 @@
 
 
 import argparse
+import gzip
 import collections
 
 
@@ -35,7 +36,12 @@ def read_gfa(gfa, id_dict):
             assert len(id_dict[old_ID]) == 1
             return id_dict[old_ID][0][0]
 
-    with open(gfa) as f:
+    if gfa.endswith('.gz'):
+        fopen = gzip.open
+    else:
+        fopen = open
+
+    with fopen(gfa, 'rt') as f:
         for line in f:
             if not line.strip():
                 continue
@@ -52,7 +58,7 @@ def read_gfa(gfa, id_dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('gfa', help='the GFA file output by assemblers')
+    parser.add_argument('gfa', help='the GFA file output by assemblers, gzipped files are acceptable')
     parser.add_argument('liftover', help='the *.liftover.agp file output by the `juicer pre` of YaHS')
     args = parser.parse_args()
 

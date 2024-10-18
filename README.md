@@ -16,7 +16,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 - [x] Super-fast and memory-efficient
 - [x] Able to order and orient contigs without prior knowledge of the number of chromosomes
 - [x] Able to utilize phasing information from hifiasm with varying confidence levels
-- [x] Extensive compatibility and user-friendly interface: compatible with Pore-C data; supports chromap; provides a built-in one-command pipeline; able to produce highly customizable vector graphics for contact maps
+- [x] Extensive compatibility and user-friendly interface: supports chromap; provides a built-in one-command pipeline; able to produce highly customizable vector graphics for contact maps
 
 **Recent updates:**
 
@@ -94,16 +94,6 @@ $ bwa mem -5SP -t 28 asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblast
 $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view - -b -@ 14 -o HiC.filtered.bam
 ```
 
-HapHiC also supports Pore-C data:
-
-```bash
-# (1) Align Pore-C data (FASTA/FASTQ) to the assembly using minimap2
-$ minimap2 -x map-ont -a -t 28 asm.fa /path/to/porec_reads.gz | samtools view - -b -@ 14 -o map.bam
-
-# (2) Convert `map.bam` to a format compatible with HapHiC
-# Finally, you will obtain a new BAM file named `porec_paired.bam`, which should be used as the input BAM file for HapHiC.
-$ /path/to/HapHiC/utils/prepare_paired_bam_minimap2.py map.bam
-```
 
 **Notes:**
 

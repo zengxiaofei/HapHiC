@@ -15,31 +15,34 @@ import math
 # is necessary for the downstream format conversion:
 # `$ bedGraphToBigWig in.bedGraph chrom.sizes out.bw`
 
-def parse_gfa(gfa, depth_tag):
+def parse_gfa(gfas, depth_tag):
 
-    if gfa.endswith('.gz'):
-        fopen = gzip.open
-    else:
-        fopen = open
-    
     depth_dict = dict()
     depth_pattern = re.compile(r'.+{}:[if]:([\d.]+)'.format(depth_tag))
-    with fopen(gfa, 'rt') as f:
-        for line in f:
-            if not line.startswith('S\t'):
-                continue
-            segment = line.split()[1]
-            depth_match = depth_pattern.match(line)
-            if not depth_match:
-                raise Exception('Cannot find the read depth for segment {}'.format(segment))
-            depth = depth_match.groups()[0]
-            depth_dict[segment] = depth
+
+    for gfa in gfas:
+
+        if gfa.endswith('.gz'):
+            fopen = gzip.open
+        else:
+            fopen = open
+
+        with fopen(gfa, 'rt') as f:
+            for line in f:
+                if not line.startswith('S\t'):
+                    continue
+                segment = line.split()[1]
+                depth_match = depth_pattern.match(line)
+                if not depth_match:
+                    raise Exception('Cannot find the read depth for segment {}'.format(segment))
+                depth = int(depth_match.groups()[0]) + 1
+                depth_dict[segment] = depth
 
     return depth_dict
 
 
 def parse_agp(agp, scale):
-    
+
     ctg_list = []
     total_len = 0
     with open(agp) as f:
@@ -58,7 +61,7 @@ def parse_agp(agp, scale):
         print('Scale is estimated to be {}, and the assembly size is {}'.format(
             estimated_scale, assembly_size), file=sys.stderr)
         return ctg_list, estimated_scale, assembly_size 
-    
+
     if scale != estimated_scale:
         print('Warning: designated scale ({}) differs from the estimated one ({})'.format(
             scale, estimated_scale), file=sys.stderr)
@@ -86,14 +89,14 @@ def output_bedGraph(ctg_list, scale, assembly_size, depth_dict):
                     end // scale,
                     depth_dict[ctg]))
             accumulated_start += ctg_len
-    
+
     print('Finished. Please execute the command: `$ bedGraphToBigWig in.bedGraph chrom.sizes out.bw`', file=sys.stderr)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('gfa', help='the GFA file output by assemblers, gzipped files are acceptable')
     parser.add_argument('agp', help='the AGP file output by scaffolders like HapHiC and YaHS')
+    parser.add_argument('gfa', nargs='+', help='the GFA file(s) output by assemblers, gzipped files are acceptable')
     parser.add_argument('--depth_tag', default='rd', help='the tag name for read depth, default: %(default)s')
     parser.add_argument('--scale', default=None, type=int, help='assembly scale, default: %(default)s (estimated automatically)') 
     args = parser.parse_args()

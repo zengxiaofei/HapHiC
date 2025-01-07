@@ -534,3 +534,11 @@ If you have used the optimization function for contig ordering and orientation, 
 ## <span id="reproduce">Reproducibility</span>
 
 To reproduce the results in our paper, please use the HapHiC code in commit [431b7b6](https://github.com/zengxiaofei/HapHiC/tree/431b7b6f3e0471c960985ecdbbab4d18b452a22f).
+
+
+
+## Star History
+
+Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)

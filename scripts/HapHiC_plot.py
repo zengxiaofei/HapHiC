@@ -109,7 +109,7 @@ def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size
 
     total_n_bins = 0
     min_len *= 1000000
-    
+
     if specified_scaffolds:
         scaffolds = specified_scaffolds.split(',')
 
@@ -117,15 +117,28 @@ def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size
     group_to_total_bin_dict = dict()
     group_list = list()
 
-    for group, size in group_size_dict.items():
-        if size >= min_len and ((specified_scaffolds and group in scaffolds) or not specified_scaffolds):
+    if specified_scaffolds:
+        # order the scaffolds as specified
+        for group in scaffolds:
+            if group not in group_size_dict:
+                raise Exception('Cannot find {} in the input AGP file'.format(group))
+            size = group_size_dict[group]
             group_n_bins = size // bin_size + 1
             for n in range(group_n_bins):
                 group_to_total_bin_dict[(group, n)] = total_n_bins + n
             total_n_bins += group_n_bins
             group_list.append(group)
-        else:
-            frag_set -= group_frag_dict[group]
+    else:
+        # order the scaffolds according to the AGP file
+        for group, size in group_size_dict.items():
+            if size >= min_len:
+                group_n_bins = size // bin_size + 1
+                for n in range(group_n_bins):
+                    group_to_total_bin_dict[(group, n)] = total_n_bins + n
+                total_n_bins += group_n_bins
+                group_list.append(group)
+            else:
+                frag_set -= group_frag_dict[group]
 
     contact_matrix = np.zeros((total_n_bins, total_n_bins), dtype=int)
 
@@ -735,10 +748,6 @@ def parse_arguments():
             help='number of threads for reading BAM file, default: %(default)s')
 
     args = parser.parse_args()
-    
-    # When this parameter is set, the `--min_len` parameter will be disabled
-    if args.specified_scaffolds:
-        args.min_len = 0
 
     return args
 

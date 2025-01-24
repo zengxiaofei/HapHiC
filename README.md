@@ -537,7 +537,7 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 
 
 
-## Star History
+## Star history
 
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 

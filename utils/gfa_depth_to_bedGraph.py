@@ -68,9 +68,7 @@ def parse_agp(agp, scale):
     return ctg_list, scale, total_len // scale
 
 
-def output_bedGraph(ctg_list, scale, assembly_size, depth_dict):
-
-    BIN_SIZE = 100000
+def output_bedGraph(ctg_list, scale, assembly_size, depth_dict, bin_size):
 
     with open('chrom.sizes', 'w') as f:
         print('Writing assembly size into `chrom.sizes`...', file=sys.stderr)
@@ -78,12 +76,11 @@ def output_bedGraph(ctg_list, scale, assembly_size, depth_dict):
 
     with open('in.bedGraph', 'w') as f:
         print('Writing depths of each contigs into `in.bedGraph`...', file=sys.stderr)
-        f.write('track type=bedGraph\n')
         accumulated_start = 0
         for ctg, ctg_len in ctg_list:
-            for n in range(math.ceil(ctg_len / BIN_SIZE)):
-                start = accumulated_start + n * BIN_SIZE
-                end = accumulated_start + (n + 1) * BIN_SIZE if (n + 1) * BIN_SIZE < ctg_len else accumulated_start + ctg_len
+            for n in range(math.ceil(ctg_len / bin_size)):
+                start = accumulated_start + n * bin_size
+                end = accumulated_start + (n + 1) * bin_size if (n + 1) * bin_size < ctg_len else accumulated_start + ctg_len
                 f.write('assembly\t{}\t{}\t{}\n'.format(
                     start // scale,
                     end // scale,
@@ -97,13 +94,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('agp', help='the AGP file output by scaffolders like HapHiC and YaHS')
     parser.add_argument('gfa', nargs='+', help='the GFA file(s) output by assemblers, gzipped files are acceptable')
+    parser.add_argument('--bin_size', type=int, default=10000, help='the bin size for generating in.bedGraph, default: %(default)s')
     parser.add_argument('--depth_tag', default='rd', help='the tag name for read depth, default: %(default)s')
     parser.add_argument('--scale', default=None, type=int, help='assembly scale, default: %(default)s (estimated automatically)') 
     args = parser.parse_args()
 
     depth_dict = parse_gfa(args.gfa, args.depth_tag)
     ctg_list, scale, assembly_size = parse_agp(args.agp, args.scale)
-    output_bedGraph(ctg_list, scale, assembly_size, depth_dict)
+    output_bedGraph(ctg_list, scale, assembly_size, depth_dict, args.bin_size)
 
 
 if __name__ == '__main__':

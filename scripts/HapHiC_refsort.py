@@ -99,6 +99,9 @@ def parse_paf(paf, ctg_group_dict):
 
             if ctg in ctg_group_dict:
 
+                if len(ctg_group_dict[ctg]) == 0:
+                    continue
+
                 ref_aln_start, ref_aln_end = int(cols[7]), int(cols[8])
 
                 if len(ctg_group_dict[ctg]) == 1:

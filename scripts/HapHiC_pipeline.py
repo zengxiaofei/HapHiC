@@ -524,8 +524,8 @@ def main():
     if 4 in steps:
         haphic_build(args)
 
-    finished_time = time.time()
-    logger.info('HapHiC pipeline finished in {}s'.format(finished_time-start_time))
+    end_time = time.time()
+    logger.info('HapHiC pipeline finished in {}s'.format(end_time-start_time))
 
 
 if __name__ == '__main__':

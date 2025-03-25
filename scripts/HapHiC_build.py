@@ -202,7 +202,7 @@ def parse_arguments():
     parser.add_argument(
             'fasta', help='draft genome in FASTA format. Use `corrected_asm.fa` generated in the clustering step when `--correct_nrounds` was set')
     parser.add_argument(
-            'raw_fasta', default=None,
+            'raw_fasta',
             help='raw (uncorrected) draft genome in FASTA format, used for generating the script for juicebox visualization and curation. '
             'When `--correct_nrounds` was not set, this parameter should be the same as the parameter `fasta`')
     parser.add_argument(
@@ -272,8 +272,8 @@ def run(args, log_file=None):
 
     generate_juicebox_script(args)
 
-    finish_time = time.time()
-    logger.info('Program finished in {}s'.format(finish_time-start_time))
+    end_time = time.time()
+    logger.info('Program finished in {}s'.format(end_time-start_time))
 
 
 def main():

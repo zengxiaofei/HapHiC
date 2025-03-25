@@ -2850,8 +2850,8 @@ def run(args, log_file=None):
     gc.collect()
 
     if args.quick_view:
-        finished_time = time.time()
-        logger.info('Program finished in {}s'.format(finished_time-start_time))
+        end_time = time.time()
+        logger.info('Program finished in {}s'.format(end_time-start_time))
         return None
 
     # output clm file
@@ -2923,8 +2923,8 @@ def run(args, log_file=None):
         # statistics for RE sites, Hi-C links, link density, link density ratio
         output_statistics(fa_dict, full_link_dict, result_clusters_list)
 
-    finished_time = time.time()
-    logger.info('Program finished in {}s'.format(finished_time-start_time))
+    end_time = time.time()
+    logger.info('Program finished in {}s'.format(end_time-start_time))
 
 
 def main():

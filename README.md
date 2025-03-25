@@ -470,8 +470,12 @@ By using the `haphic refsort` command, you can generate a new AGP file based on 
 ```bash
 # By default, scaffolds are output based on the alphabetical order of the chromosome IDs of the reference genome
 $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf > scaffolds.refsort.agp
-# You can manually specify the order by listing them and separating with commas
-$ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order chr1,chr2,chr3,chr4,... > scaffolds.refsort.agp
+# You can specify the order by listing chromosome IDs of the reference genome separated by commas (no spaces)
+$ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order "chr1,chr2,chr3,chr4,..." > scaffolds.refsort.agp
+# If you want to generate a new FASTA file (`scaffolds.refsort.fa`) as well:
+$ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --fasta asm.fa > scaffolds.refsort.agp
+# If you want to run `haphic refsort` on `out_JBAT.FINAL.agp`
+$ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 ```
 
 The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 

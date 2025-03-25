@@ -805,8 +805,8 @@ def run(args, log_file=None):
             mock_clusters_file(fa_dicts, total_lens, final_dir)
             mock_group_file(fa_dicts, total_lens, final_dir)
 
-        finished_time = time.time()
-        logger.info('Program finished in {}s'.format(finished_time-start_time))
+        end_time = time.time()
+        logger.info('Program finished in {}s'.format(end_time-start_time))
         return None
 
     if args.links.endswith('.pkl'):
@@ -904,8 +904,8 @@ def run(args, log_file=None):
     else:
         split_clm_file(args.clm, new_group_ctg_dict, new_ctg_group_dict, 'reassigned_groups')
 
-    finish_time = time.time()
-    logger.info('Program finished in {}s'.format(finish_time-start_time))
+    end_time = time.time()
+    logger.info('Program finished in {}s'.format(end_time-start_time))
 
 
 def main():

@@ -955,8 +955,8 @@ def run(args, log_file=None):
             group_specific_data_dict[group] = None
             run_haphic_sorting(args, group, fa_dict, group_specific_data, group_param_dict[group], allhic)
 
-    finished_time = time.time()
-    logger.info('Program finished in {}s'.format(finished_time-start_time))
+    end_time = time.time()
+    logger.info('Program finished in {}s'.format(end_time-start_time))
 
 
 def main():

@@ -798,8 +798,8 @@ def main():
     if args.separate_plots:
         draw_separate_heatmaps(normalized_contact_matrix, group_list, group_size_dict, bin_size, vmax, args)
 
-    finished_time = time.time()
-    logger.info('Program finished in {}s'.format(finished_time-start_time))
+    end_time = time.time()
+    logger.info('Program finished in {}s'.format(end_time-start_time))
 
 
 if __name__ == '__main__':

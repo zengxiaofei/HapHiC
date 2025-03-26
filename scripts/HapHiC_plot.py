@@ -607,8 +607,11 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     else:
         cb.set_label('counts', fontsize=7)
     cb.ax.tick_params(labelsize=6)
-
-    plt.savefig('contact_map.pdf')
+    
+    if args.prefix:
+        plt.savefig('{}contact_map.pdf'.format(args.prefix))
+    else:
+        plt.savefig('contact_map.pdf')
     plt.close()
 
 
@@ -670,8 +673,11 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
         ax.set_title(group, fontsize=6)
 
     fig.tight_layout()
-
-    plt.savefig('separate_plots.pdf')
+    
+    if args.prefix:
+        plt.savefig('{}separate_plots.pdf'.format(args.prefix))
+    else:
+        plt.savefig('separate_plots.pdf')
     plt.close()
 
 
@@ -743,6 +749,9 @@ def parse_arguments():
     parser.add_argument(
             '--figure_height', type=int, default=12, 
             help='figure height, default: %(default)s (cm)')
+    parser.add_argument(
+            '--prefix', default=None,
+            help='prefix for output PDF files, default: %(default)s')
     parser.add_argument(
             '--threads', type=int, default=8, 
             help='number of threads for reading BAM file, default: %(default)s')

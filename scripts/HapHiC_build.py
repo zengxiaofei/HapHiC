@@ -155,13 +155,17 @@ def build_final_scaffolds(tour_dict, fa_dict, output_ctgs, corrected_ctg_set, ar
         for group in order_list:
             # output FASTA file
             output_seq = get_output_seq(group)
-            fa_out.write('>{}\n{}\n'.format(group, output_seq))
+            fa_out.write('>{}\n'.format(group))
+            for i in range(0, len(output_seq), args.max_width):
+                fa_out.write('{}\n'.format(output_seq[i:i+args.max_width]))
             # output AGP file
             write_agp(group, agp_out, raw_agp_out)
         # contigs that are not in tour files
         for ctg, ctg_len in unanchored_ctg_list:
             # output FASTA file
-            fa_out.write('>{}\n{}\n'.format(ctg, fa_dict[ctg][0]))
+            fa_out.write('>{}\n'.format(ctg))
+            for i in range(0, len(fa_dict[ctg][0]), args.max_width):
+                fa_out.write('{}\n'.format(fa_dict[ctg][0][i:i+args.max_width]))
             # output AGP file
             # for agp output with newly broken contigs
             agp_out.write('{0}\t1\t{1}\t1\tW\t{0}\t1\t{1}\t+\n'.format(ctg, ctg_len))
@@ -217,6 +221,9 @@ def parse_arguments():
     parser.add_argument(
             '--Ns', type=int, default=100,
             help='number of Ns representing gaps, default: %(default)s')
+    parser.add_argument(
+            '--max_width', type=int, default=60,
+            help='maximum number of bases per line in the output FASTA file, default: %(default)s (bp)')
     parser.add_argument(
             '--sort_by_input',
             default=False, action='store_true',

@@ -133,7 +133,7 @@ def parse_paf(paf, ctg_group_dict):
     return group_ref_dict
 
 
-def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, ref_order, fa_dict=None, fout=None):
+def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args, fa_dict=None, fout=None):
 
     logger.info('Ordering and orienting scaffolds based on alignments...')
 
@@ -144,12 +144,12 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
     def revcom(seq):
         return seq.translate(com_tab)[::-1]
 
-    def write_seq(fp, seq, orient):
+    def orient_seq(seq, orient):
         if orient == '+':
-            fp.write(seq)
+            return seq
         else:
             assert orient == '-'
-            fp.write(revcom(seq))
+            return revcom(seq)
 
     def get_reversed_orientation(orient):
         if orient == '+':
@@ -238,11 +238,12 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
         else:
             ref_groups_dict[max_ref].append((group, -1, max_sum_r))
 
-    if not ref_order:
+    if not args.ref_order:
         order_list = sorted(ref_groups_dict.keys())
     else:
-        order_list = ref_order.split(',')
+        order_list = args.ref_order.split(',')
 
+    seq_list = []
     output_groups = set()
     for ref in order_list:
         ref_groups_dict[ref].sort(key=lambda x: x[-1], reverse=True)
@@ -260,10 +261,10 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                         cols = line.split()
                         if cols[4] == 'W':
                             ctg, start, end, orient = cols[5:9]
-                            write_seq(fout, fa_dict[ctg][0][int(start)-1:int(end)], orient)
+                            seq_list.append(orient_seq(fa_dict[ctg][0][int(start)-1:int(end)], orient))
                         else:
                             Ns = int(cols[5])
-                            fout.write('N'*Ns)
+                            seq_list.append('N'*Ns)
 
             else:
                 logger.info('{}: {} -'.format(ref, group))
@@ -275,16 +276,19 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                     if cols[4] == 'W':
                         last_col = get_reversed_orientation(cols[-1])
                         if fout:
-                            write_seq(fout, fa_dict[cols[5]][0][int(cols[6])-1:int(cols[7])], last_col)
+                            seq_list.append(orient_seq(fa_dict[cols[5]][0][int(cols[6])-1:int(cols[7])], last_col))
                     else:
                         last_col = cols[-1]
                         if fout:
                             Ns = int(cols[5])
-                            fout.write('N'*Ns)
+                            seq_list.append('N'*Ns)
                     print('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(
                         group, reversed_start, reversed_end, n, cols[4], cols[5], cols[6], cols[7], last_col))
             if fout:
-                fout.write('\n')
+                seq = ''.join(seq_list)
+                for i in range(0, len(seq), args.max_width):
+                    fout.write('{}\n'.format(seq[i:i+args.max_width]))
+                seq_list.clear()
 
     for group, lines in group_agp_lines.items():
         # the remaining groups (mostly unanchored contigs)
@@ -297,12 +301,15 @@ def order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, gro
                     cols = line.split()
                     if cols[4] == 'W':
                         ctg, start, end, orient = cols[5:9]
-                        write_seq(fout, fa_dict[ctg][0][int(start)-1:int(end)], orient)
+                        seq_list.append(orient_seq(fa_dict[ctg][0][int(start)-1:int(end)], orient))
                     else:
                         Ns = int(cols[5])
-                        fout.write('N'*Ns)
+                        seq_list.append('N'*Ns)
             if fout:
-                fout.write('\n')
+                seq = ''.join(seq_list)
+                for i in range(0, len(seq), args.max_width):
+                    fout.write('{}\n'.format(seq[i:i+args.max_width]))
+                seq_list.clear()
 
 
 def parse_arguments():
@@ -314,6 +321,9 @@ def parse_arguments():
     parser.add_argument(
             '--fasta', default=None,
             help='raw (uncorrected) draft genome in FASTA format. When provided, the program will output sorted scaffolds in FASTA format')
+    parser.add_argument(
+            '--max_width', type=int, default=60,
+            help='maximum number of bases per line in the output FASTA file, default: %(default)s (bp)')
     parser.add_argument(
             '--fout', default='scaffolds.refsort.fa',
             help='file name for output FASTA file, default: %(default)s')
@@ -344,9 +354,9 @@ def run(args, log_file=None):
     if args.fasta:
         fa_dict = parse_fasta(args.fasta)
         with open(args.fout, 'w') as fout:
-            order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args.ref_order, fa_dict, fout)
+            order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args, fa_dict, fout)
     else:
-        order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args.ref_order)
+        order_and_orient_groups(ctg_group_dict, group_ref_dict, group_agp_lines, group_len_dict, one_ctg_groups, args)
 
     end_time = time.time()
     logger.info('Program finished in {}s'.format(end_time-start_time))

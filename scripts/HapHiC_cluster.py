@@ -999,22 +999,7 @@ def break_and_update_ctgs(
 
         return end
 
-    def pos_shift_for_multi_break_points(ctg, coord, pos_shift_list):
-
-        if ctg not in unbroken_ctgs:
-            assert ':' in ctg
-            ctg = ctg.rsplit(':', 1)[0]
-
-        for n, p in enumerate(pos_shift_list):
-            new_coord = coord - p
-            if new_coord >= 0:
-                if n:
-                    end = pos_shift_list[n-1]
-                else:
-                    end = fa_dict[ctg][1]
-                return '{}:{}-{}'.format(ctg, p+1, end), new_coord
-
-    def pos_shift_for_single_break_point(ctg, coord, pos_shift_list):
+    def pos_shift(ctg, coord, pos_shift_list):
 
         if ctg in unbroken_ctgs:
             start = 1
@@ -1024,10 +1009,14 @@ def break_and_update_ctgs(
             ctg, pos_range = ctg.rsplit(':', 1)
             start, end = [int(p) for p in pos_range.split('-')]
 
-        if coord >= pos_shift_list[0]:
-            return '{}:{}-{}'.format(ctg, start+pos_shift_list[0], end), coord-pos_shift_list[0]
-        else:
-            return '{}:{}-{}'.format(ctg, start, pos_shift_list[0]), coord
+        for n, p in enumerate(pos_shift_list):
+            new_coord = coord - p
+            if new_coord >= 0:
+                if n:
+                    return '{}:{}-{}'.format(ctg, p+start, pos_shift_list[n-1]), new_coord
+                else:
+                    return '{}:{}-{}'.format(ctg, p+start, end), new_coord
+
 
     logger.info('Breaking contigs and updating data...')
 
@@ -1055,13 +1044,6 @@ def break_and_update_ctgs(
             # a list used to calculate coordinate shift of Hi-C links after breaking contig
             pos_shift_list = [point for point, cv in break_points][::-1] + [0]
 
-            # single breakpoint
-            if len(pos_shift_list) == 2:
-                pos_shift = pos_shift_for_single_break_point
-            # multiple breakpoints
-            else:
-                pos_shift = pos_shift_for_multi_break_points
-
             npairs = len(ctg_link_pos_dict[ctg])//2
             # if cov of the breakpoint is not zero
             if not any_zero:
@@ -1079,6 +1061,7 @@ def break_and_update_ctgs(
                         new_frag_i, new_coord_i = pos_shift(ctg, coord_i, pos_shift_list)
                         new_frag_j, new_coord_j = pos_shift(ctg, coord_j, pos_shift_list)
                         # consider only intra-frag Hi-C links
+                        # this conditional check may not be necessary
                         if new_frag_i == new_frag_j:
                             ctg_link_pos_dict[new_frag_i].extend((new_coord_i, new_coord_j))
             # if cov of the breakpoint is zero
@@ -1091,6 +1074,7 @@ def break_and_update_ctgs(
                     new_frag_i, new_coord_i = pos_shift(ctg, coord_i, pos_shift_list)
                     new_frag_j, new_coord_j = pos_shift(ctg, coord_j, pos_shift_list)
                     # consider only intra-frag Hi-C links
+                    # this conditional check may not be necessary
                     if new_frag_i == new_frag_j:
                         ctg_link_pos_dict[new_frag_i].extend((new_coord_i, new_coord_j))
 

@@ -307,6 +307,9 @@ def parse_argument():
             '--Ns', type=int, default=100,
             help='number of Ns representing gaps, default: %(default)s')
     build_group.add_argument(
+            '--max_width', type=int, default=60,
+            help='maximum number of bases per line in the output FASTA file, default: %(default)s (bp)')
+    build_group.add_argument(
             '--sort_by_input',
             default=False, action='store_true',
             help='sort output scaffolds by the order of input `*.tour` files, otherwise by group length, default: %(default)s')

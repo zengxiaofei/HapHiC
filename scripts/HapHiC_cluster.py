@@ -113,6 +113,41 @@ def parse_fasta(fasta, RE='GATC', keep_letter_case=False, logger=logger):
     return fa_dict
 
 
+def determine_int_type(fa_dict, logger=logger):
+
+    """calculate the range of contig lengths to determine whether the int32 or int64 should be used"""
+
+    MAX_INT32 = 2 ** 31 - 1
+
+    len_list = [ctg_info[1] for ctg_info in fa_dict.values()]
+    len_list.sort()
+    max_ctg_len = len_list[-1]
+    sec_ctg_len = 0 if len(fa_dict) < 2 else len_list[-2]
+    
+    if max_ctg_len > MAX_INT32:
+        pos_int_type = 'int64'
+    else:
+        pos_int_type = 'int32'
+
+    if max_ctg_len + sec_ctg_len > MAX_INT32:
+        dist_int_type = 'int64'
+    else:
+        dist_int_type = 'int32'
+
+    logger.info(
+            'The longest and second longest contigs are {} bp and {} bp, respectively. The data types for '
+            'contig positions and CLM distances are calculated to be {} and {}, respectively.'.format(
+                max_ctg_len, sec_ctg_len, pos_int_type, dist_int_type))
+    
+    if pos_int_type == 'int64':
+        logger.warning(
+                'Found at least one contig longer than {} bp in the input assembly. There could be a problem '
+                'when visualizing it in Juicebox'.format(MAX_INT32))
+    
+            
+    return pos_int_type, dist_int_type
+
+
 def parse_gfa(gfa_list, fa_dict, logger=logger):
 
     """get the read depth and phasing information from gfa file(s)"""
@@ -1559,7 +1594,7 @@ def bam_generator(bam, threads, format_options):
             yield aln.reference_name, aln.next_reference_name, aln.reference_start, aln.next_reference_start
 
 
-def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set):
+def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_set, pos_int_type, dist_int_type):
 
     """parse alignments (when no contigs are split into bins)"""
     logger.info('Parsing input alignments...')
@@ -1571,13 +1606,19 @@ def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_se
     full_link_dict = defaultdict(int)
 
     # a dict storing coords of Hi-C links between contigs
-    ctg_coord_dict = defaultdict(lambda: array('i'))
+    if pos_int_type == 'int32':
+        ctg_coord_dict = defaultdict(lambda: array('i'))
+    else:
+        ctg_coord_dict = defaultdict(lambda: array('l'))
 
     # if not reassignment:
     flank_link_dict = defaultdict(int)
     HT_link_dict = defaultdict(int)
     ctg_link_dict = defaultdict(int)
-    clm_dict = defaultdict(lambda: array('i'))
+    if dist_int_type == 'int32':
+        clm_dict = defaultdict(lambda: array('i'))
+    else:
+        clm_dict = defaultdict(lambda: array('l'))
 
     for ref, mref, pos, mpos in alignments:
 
@@ -1615,7 +1656,7 @@ def parse_alignments_for_ctgs(alignments, fa_dict, args, ctg_len_dict, Nx_ctg_se
     return full_link_dict, flank_link_dict, HT_link_dict, clm_dict, ctg_link_dict, ctg_coord_dict
 
 
-def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set):
+def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set, pos_int_type, dist_int_type):
 
     """parse alignments (when some contigs are split into bins)"""
 
@@ -1637,7 +1678,10 @@ def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag
     full_link_dict = defaultdict(int)
 
     # a dict storing coords of Hi-C links between contigs
-    ctg_coord_dict = defaultdict(lambda: array('i'))
+    if pos_int_type == 'int32':
+        ctg_coord_dict = defaultdict(lambda: array('i'))
+    else:
+        ctg_coord_dict = defaultdict(lambda: array('l'))
     # a dict mapping ctg pairs to frag pairs
     ctg_pair_to_frag = defaultdict(set)
 
@@ -1645,7 +1689,10 @@ def parse_alignments(alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag
     flank_link_dict = defaultdict(int)
     HT_link_dict = defaultdict(int)
     frag_link_dict = defaultdict(int)
-    clm_dict = defaultdict(lambda: array('i'))
+    if dist_int_type == 'int32':
+        clm_dict = defaultdict(lambda: array('i'))
+    else:
+        clm_dict = defaultdict(lambda: array('l'))
 
     for ref, mref, pos, mpos in alignments:
 
@@ -2739,6 +2786,8 @@ def run(args, log_file=None):
     # read draft genome in FASTA format,
     # construct a dict to store sequence and length of each contig
     fa_dict = parse_fasta(args.fasta, RE=args.RE)
+    # calculate the range of contig lengths to determine whether the int32 or int64 should be used
+    pos_int_type, dist_int_type = determine_int_type(fa_dict) 
 
     # parse gfa file(s) to get the read depth and phasing information
     if args.gfa:
@@ -2819,10 +2868,10 @@ def run(args, log_file=None):
     # parse alignments
     if split_ctg_set:
         full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict, ctg_pair_to_frag = parse_alignments(
-                alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set)
+                alignments, fa_dict, args, bin_size, frag_len_dict, Nx_frag_set, split_ctg_set, pos_int_type, dist_int_type)
     else:
         full_link_dict, flank_link_dict, HT_link_dict, clm_dict, frag_link_dict, ctg_coord_dict = parse_alignments_for_ctgs(
-                alignments, fa_dict, args, frag_len_dict, Nx_frag_set)
+                alignments, fa_dict, args, frag_len_dict, Nx_frag_set, pos_int_type, dist_int_type)
 
     if args.ul:    
         # update HT_link_dict based on the contig paths supported by ultra-long reads 

@@ -20,7 +20,7 @@ from sklearn.cluster import AgglomerativeClustering
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
 
-from HapHiC_cluster import parse_fasta, parse_gfa, stat_fragments, remove_allelic_HiC_links, dict_to_matrix
+from HapHiC_cluster import parse_fasta, determine_int_type, parse_gfa, stat_fragments, remove_allelic_HiC_links, dict_to_matrix
 
 from _version import __version__, __update_time__
 
@@ -50,7 +50,7 @@ def parse_pickle(fa_dict, pickle_file):
     return full_link_dict, sorted_ctg_list, RE_site_dict
 
 
-def parse_pairs_for_reassignment(fa_dict, args, logger=logger):
+def parse_pairs_for_reassignment(fa_dict, pos_int_type, args, logger=logger):
 
     """parse pairs file (for reassignment)"""
     logger.info('Parsing input pairs file...')
@@ -61,7 +61,10 @@ def parse_pairs_for_reassignment(fa_dict, args, logger=logger):
     full_link_dict = defaultdict(int)
 
     # a dict storing coords of Hi-C links between contigs
-    ctg_coord_dict = defaultdict(lambda: array('i'))
+    if pos_int_type == 'int32':
+        ctg_coord_dict = defaultdict(lambda: array('i'))
+    else:
+        ctg_coord_dict = defaultdict(lambda: array('l'))
 
     if pairs.endswith('.pairs'):
         fopen = open
@@ -95,7 +98,7 @@ def parse_pairs_for_reassignment(fa_dict, args, logger=logger):
     return full_link_dict, ctg_coord_dict
 
 
-def parse_bam_for_reassignment(fa_dict, args, logger=logger):
+def parse_bam_for_reassignment(fa_dict, pos_int_type, args, logger=logger):
 
     """parse BAM file (for reassignment)"""
     logger.info('Parsing input BAM file...')
@@ -106,7 +109,10 @@ def parse_bam_for_reassignment(fa_dict, args, logger=logger):
     full_link_dict = defaultdict(int)
 
     # a dict storing coords of Hi-C links between contigs
-    ctg_coord_dict = defaultdict(lambda: array('i'))
+    if pos_int_type == 'int32':
+        ctg_coord_dict = defaultdict(lambda: array('i'))
+    else:
+        ctg_coord_dict = defaultdict(lambda: array('l'))
 
     format_options = [b'filter=flag.read1 && refid != mrefid']
 
@@ -774,6 +780,8 @@ def run(args, log_file=None):
     # read draft genome in FASTA format,
     # construct a dict to store sequence and length of each contig / scaffold
     fa_dict = parse_fasta(args.fasta, RE=args.RE, logger=logger)
+    # calculate the range of contig lengths to determine whether the int32 or int64 should be used
+    pos_int_type, _ = determine_int_type(fa_dict)
 
     # quick view mode
     if args.quick_view:

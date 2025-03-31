@@ -4,7 +4,7 @@ HapHiC：一款基于Hi-C数据的快速、不依赖参考基因组的单倍型�
 
 ![](./images/HapHiC1.png)
 
-<center><strong>[ <a href="./README.md)">English</a> | 简体中文 ]</strong></center>
+<div align="center"><strong>[ <a href="./README.md">English</a> | 简体中文 ]</strong></div>
 
 HapHiC是一款利用Hi-C数据将单倍型分型的基因组组装挂载至染色体水平伪分子的挂载工具。与另一款同类工具[ALLHiC](https://github.com/tangerzhang/ALLHiC)不同，HapHiC无需参考基因组即可完成该过程。我们的评估结果表明，HapHiC对低contig N50、低深度的Hi-C测序数据以及各类组装错误具有更高容忍度，其性能优于其他Hi-C挂载工具。此外，该工具运行速度极快，也适用于单倍型塌缩的二倍体及异源多倍体基因组组装。
 

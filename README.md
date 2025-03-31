@@ -4,7 +4,7 @@
 
 ![](./images/HapHiC1.png)
 
-<center><strong>[ English | <a href="./README_cn.md)">简体中文</a> ]</strong></center>
+<div align="center"><strong>[ English | <a href="./README_cn.md">简体中文</a> ]</strong></div>
 
 HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplotype-phased genome assemblies into chromosome-scale pseudomolecules. Unlike [ALLHiC](https://github.com/tangerzhang/ALLHiC), another allele-aware scaffolder, HapHiC can achieve this without the need for reference genomes. Our evaluations indicate that HapHiC outperforms other Hi-C scaffolding tools with higher tolerance to low contig N50, low Hi-C sequencing depth, and various types of assembly errors. Additionally, HapHiC is super-fast and also suitable for haplotype-collapsed diploid and allopolyploid genome assemblies.
 

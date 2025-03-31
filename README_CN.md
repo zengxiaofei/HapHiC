@@ -537,7 +537,7 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 
 ## <span id="problems">问题与错误报告</span>
 
-* **提问（为使所有人都能从中获益，请尽量使用英语）：**https://github.com/zengxiaofei/HapHiC/issues
+* **提问（为使所有人都能从中获益，请尽量使用英语）：** https://github.com/zengxiaofei/HapHiC/issues
 * **在提问之间，请先阅读：** [Important: More information allows me to grasp your issue faster](https://github.com/zengxiaofei/HapHiC/issues/32)
 * **我们已经构建了[基于DeepSeek R1的HapHiC知识库](https://github.com/zengxiaofei/HapHiC/issues/106)，可解决绝大部分HapHiC相关问题**
 

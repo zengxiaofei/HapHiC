@@ -296,7 +296,7 @@ For more information, run `haphic build --help`.
 HapHiC can scaffold most genomes **within 1 hour** using only 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41477-024-01755-3/MediaObjects/41477_2024_1755_MOESM1_ESM.pdf) in our [paper](https://doi.org/10.1038/s41477-024-01755-3).
 
 | Species              | Karyotype    | Haplotype-resolved | Assembly size (Gb) | Contig N50 (Mb) | Number of contigs | Hi-C depth after filtering | Wall time (min) | Peak RAM (GiB) |
-| :-------------------- | ------------ | ------------------ | ------------------ | --------------- | ----------------- | -------------------------- | --------------- | -------------- |
+| :-------------------: | :----------: | :----------------: | :----------------: | :-------------: | :---------------: | :------------------------: | :-------------: | :------------: |
 | Giant Miscanthus     | 2*n*=3*x*=57 | Yes                | 6.11               | 2.19            | 5,761             | 33.58×                     | 115.35          | 17.10          |
 | Potato C88           | 2*n*=4*x*=48 | Yes                | 3.16               | 18.78           | 2,490             | 13.4×                      | 20.15           | 5.98           |
 | Wild sugarcane Np-X  | 2*n*=4*x*=40 | Yes                | 2.76               | 0.38            | 15,510            | 23.7×                      | 78.97           | 27.02          |

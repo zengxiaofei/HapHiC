@@ -123,7 +123,7 @@ def determine_int_type(fa_dict, logger=logger):
     len_list.sort()
     max_ctg_len = len_list[-1]
     sec_ctg_len = 0 if len(fa_dict) < 2 else len_list[-2]
-    
+
     if max_ctg_len > MAX_INT32:
         pos_int_type = 'int64'
     else:
@@ -138,13 +138,12 @@ def determine_int_type(fa_dict, logger=logger):
             'The longest and second longest contigs are {} bp and {} bp, respectively. The data types for '
             'contig positions and CLM distances are calculated to be {} and {}, respectively.'.format(
                 max_ctg_len, sec_ctg_len, pos_int_type, dist_int_type))
-    
+
     if pos_int_type == 'int64':
         logger.warning(
                 'Found at least one contig longer than {} bp in the input assembly. There could be a problem '
                 'when visualizing it in Juicebox'.format(MAX_INT32))
-    
-            
+
     return pos_int_type, dist_int_type
 
 

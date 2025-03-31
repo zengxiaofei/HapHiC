@@ -4,6 +4,8 @@
 
 ![](./images/HapHiC1.png)
 
+<center><strong>[ English | <a href="./README_cn.md)">简体中文</a> ]</strong></center>
+
 HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplotype-phased genome assemblies into chromosome-scale pseudomolecules. Unlike [ALLHiC](https://github.com/tangerzhang/ALLHiC), another allele-aware scaffolder, HapHiC can achieve this without the need for reference genomes. Our evaluations indicate that HapHiC outperforms other Hi-C scaffolding tools with higher tolerance to low contig N50, low Hi-C sequencing depth, and various types of assembly errors. Additionally, HapHiC is super-fast and also suitable for haplotype-collapsed diploid and allopolyploid genome assemblies.
 
 **Features:**
@@ -14,7 +16,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
 - [x] Improved performance in chromosome assignment of contigs
 - [x] Improved performance in ordering and orienation of contigs
 - [x] Super-fast and memory-efficient
-- [x] Able to order and orient contigs without prior knowledge of the number of chromosomes
+- [x] Able to order and orient contigs without prior knowledge of the number of chromosomes (quick view mode)
 - [x] Able to utilize phasing information from hifiasm with varying confidence levels
 - [x] Extensive compatibility and user-friendly interface: supports chromap; provides a built-in one-command pipeline; able to produce highly customizable vector graphics for contact maps
 
@@ -41,7 +43,7 @@ HapHiC is an allele-aware scaffolding tool that uses Hi-C data to scaffold haplo
   * [[Step 1] Clustering](#step1)
   * [[Step 2] Reassignment](#step2)
   * [[Step 3] Ordering and orientation](#step3)
-  * [[Step 4] Building pseudomolecules](#step4)
+  * [[Step 4] Building scaffolds](#step4)
 - [Examples](#examples)
 - [Work with hifiasm](#hifiasm)
 - [Quick view mode](#quick_view)
@@ -94,12 +96,11 @@ $ bwa mem -5SP -t 28 asm.fa /path/to/read1_fq.gz /path/to/read2_fq.gz | samblast
 $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view - -b -@ 14 -o HiC.filtered.bam
 ```
 
-
-**Notes:**
-
-* Here, `asm.fa` can be haplotype-collapsed contigs (e.g., `p_ctg` in hifiasm), haplotype-phased unitigs (e.g., `p_utg` in hifiasm), or one or more sets of haplotype-resolved contigs (e.g., `hap*.p_utg` in hifiasm). In addition, `asm.fa` may also be scaffolds output by other scaffolders.
-* You can prepare the BAM file according to your own preferences or requirements, but **DO NOT** sort it by coordinate. If your BAM file is already sorted by coordinate, you need to resort it by read name (`samtools sort -n`).
-* We **DO NOT** recommend the Juicer pipeline for Hi-C reads alignment, particularly in haplotype-phased assemblies.
+> [!NOTE]
+>
+> * Here, `asm.fa` can be haplotype-collapsed contigs (e.g., `p_ctg` in hifiasm), haplotype-phased unitigs (e.g., `p_utg` in hifiasm), or one or more sets of haplotype-resolved contigs (e.g., `hap*.p_ctg` in hifiasm). In addition, `asm.fa` may also be scaffolds output by other scaffolders.
+> * You can prepare the BAM file according to your own preferences or requirements, but **DO NOT** sort it by coordinate. If your BAM file is already sorted by coordinate, you need to resort it by read name (`samtools sort -n`).
+> * We **DO NOT** recommend the Juicer pipeline for Hi-C reads alignment, particularly in haplotype-phased assemblies.
 
 ### <span id="pipeline">Run HapHiC scaffolding pipeline</span>
 
@@ -113,7 +114,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs
 ```
 
-**(ii) Restriction site.** The default restriction site is `GATC` (MboI/DpnII). You can modify this  using the `--RE` parameter. If you are unsure or if your Hi-C library was constructed without restriction enzymes (REs), it is acceptable to leave it as the default.
+**(ii) Restriction site.** The default restriction site is `GATC` (MboI/DpnII). You can modify this using the `--RE` parameter. If you are unsure or if your Hi-C library was constructed without restriction enzymes (REs), it is acceptable to leave it as the default.
 
 ```bash
 # For HindIII
@@ -124,21 +125,22 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "GATC,GANTC
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "GATC,GANTC,CTNAG,TTAA"
 ```
 
-**(iii) Contig correction.** To correct input contigs based on Hi-C linking information, use `--correct_nrounds` to enable assembly correction and set the number of correction rounds. For example:
+**(iii) Contig correction.** To correct misjoined contigs based on Hi-C linking information, use `--correct_nrounds` to enable assembly correction and set the number of correction rounds. For example:
 
 ```bash
 # Typically, two rounds of assembly correction are enough
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --correct_nrounds 2
 ```
 
-**(iv) Switch error.** If your input assembly is haplotype-phased and has a high switch error rate (often introduced by assemblers when the sequence divergence between haplotypes is very low), use `--remove_allelic_links` to remove Hi-C links between allelic contigs. The value should be the ploidy of the assembly. For example:
+**(iv) Switch error.** If your input assembly is haplotype-phased and has a high switch error rate (often introduced by assemblers when the sequence divergence between haplotypes is very low), use `--remove_allelic_links` to remove Hi-C links between allelic contigs, thereby increasing tolerance to such errors. The value should be the ploidy of the assembly. For example:
 
 ```bash
 # For haplotype-phased assembles of autotetraploids, set the parameter to 4
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --remove_allelic_links 4
 ```
 
-**Note:** If your input assembly is haplotype-phased and the Hi-C reads are aligned using other methods like chromap, we also recommend including this parameter to mitigate the adverse effects of incorrect mapping.
+> [!NOTE]
+> If your input assembly is haplotype-phased and the Hi-C reads are aligned using other methods like chromap, we also recommend including this parameter to mitigate the adverse effects of incorrect mapping.
 
 **(v) Performance.** Use `--threads` to set the number of threads for BAM file reading, and `--processes` to create multiple processes for contig ordering and orientation. For example:
 
@@ -152,21 +154,23 @@ For more information, run `haphic pipeline --help`.
 
 **Final outputs**
 
-* `01.cluster/corrected_asm.fa`: The corrected assembly in FASTA format. This file is generated only when assembly correction is enabled.
+* `01.cluster/corrected_asm.fa`: The corrected contigs in FASTA format. This file is generated only when assembly correction is enabled.
 * `04.build/scaffolds.agp`: A [SALSA](https://github.com/marbl/SALSA)-style [AGP file](https://www.ncbi.nlm.nih.gov/assembly/agp/AGP_Specification/) containing information about scaffold assignment, ordering and orientation information for all sequences in `corrected_asm.fa`. If there are any chimeric contigs that are corrected by HapHiC, the broken contigs will be assigned new IDs.
 * `04.build/scaffolds.raw.agp`: A [YaHS](https://github.com/c-zhou/yahs)-style AGP file containing information about scaffold assignment, ordering and orientation information for all sequences in `asm.fa`. The broken contigs will not be assigned new IDs, but their starting and ending coordinates in the raw contigs will be displayed in the seventh and eighth columns.
 * `04.build/scaffolds.fa`: The final scaffolds in FASTA format.
 * `04.build/juicebox.sh`: A shell script for [Juicebox visualization and curation](#juicebox).
 
-**Note:** Although the one-line command is convenient, the automatic parameter tuning may fail, leading to poor results or even a pipeline interruption in rare cases. If this occurs, we recommend [running each step individually with manual parameter tuning](#step_by_step) or trying the [quick view mode](#quick_view) described below.
+> [!NOTE]
+>
+> Although the one-line command is convenient, the automatic parameter tuning may fail, leading to poor results or even a pipeline interruption in rare cases. If this occurs, we recommend [running each step individually with manual parameter tuning](#step_by_step) or trying the [quick view mode](#quick_view) described below.
 
 
 
 ## <span id="step_by_step">Go through the pipeline step by step</span>
 
-### <span id="step1">[Step 1]. Clustering</span>
+### <span id="step1">[Step 1] Clustering</span>
 
-Before clustering, HapHiC performs preprocessing to correct assembly misjoins, filter out short, mis-assembled contigs, and remove allelic Hi-C links. After that, a Markov cluster algorithm (MCL algorithm) is used to cluster the contigs into groups. Unlike agglomerative hierarchical clustering (AHC, used in LACHESIS and ALLHiC), which specifies the number of clusters, the MCL Algorithm implicitly controls it with a parameter called "inflation". The higher the inflation, the more the groups are clustered. The main problem with AHC is that even though the number of clusters is specified, contigs from different chromosomes may also be clustered into the same group. This is common in phased diploid or polyploid genome assemblies. To solve this, HapHiC tries a series of inflations to cluster the contigs (controlled by `min_inflation` and `max_inflation`) and recommends a "best" one based on both the expected number of chromosomes `nchrs` provided and the length distribution of the groups.
+Before clustering, HapHiC performs preprocessing to correct assembly misjoins, filter out short, mis-assembled contigs, and remove allelic Hi-C links. After that, the Markov cluster algorithm ([MCL algorithm](https://micans.org/mcl/)) is used to cluster the contigs into groups. Unlike the agglomerative hierarchical clustering (AHC, used in LACHESIS and ALLHiC), which specifies the number of clusters, the MCL Algorithm implicitly controls it with a parameter called "inflation". The higher the inflation, the more the groups are clustered. The main problem with AHC is that even though the number of clusters is specified, contigs from different chromosomes may also be clustered into the same group. This is common in phased diploid or polyploid genome assemblies. To solve this, HapHiC tries a series of inflations to cluster the contigs (controlled by `--min_inflation`, `--max_inflation`, and `--inflation_step`) and recommends a "best" one based on both the expected number of chromosomes `nchrs` provided and the length distribution of the groups.
 
 ```bash
 $ /path/to/HapHiC/haphic cluster asm.fa HiC.filtered.bam nchrs
@@ -190,7 +194,7 @@ For more information, run `haphic cluster --help`.
 
 * `inflation_*`: Output directories for respective inflations.
 
-  ├── `group*.txt`: Files containing the contigs and their basic information (including lengths and numbers of restriction sites) for each group, also reffered to as `counts_RE.txt` in ALLHiC.
+  ├── `group*.txt`: Files containing the contigs and their basic information (including lengths and numbers of restriction sites) for each group, also referred to as `counts_RE.txt` in ALLHiC.
 
   └── `mcl_inflation_*.clusters.txt`: Markov clustering results.
 
@@ -202,7 +206,7 @@ You can find the "best" inflation recommendation in the log file `HapHiC_cluster
 2022-11-07 17:50:08 <HapHiC_cluster.py> [recommend_inflation] You could try inflation from 1.20 (length ratio = 0.75)
 ```
 
-In some cases, HapHiC cannot get the "best" one. It could be due to inappropriate parameters or extensive assembly errors. Check whether the parameters used are correct / appropriate and then try to tune the parameters for assembly correction, contig / Hi-C link filtration, or Markov Clustering:
+In some cases, HapHiC cannot get the "best" one. It could be due to inappropriate parameters or extensive assembly errors. Check whether the parameters used are correct/appropriate and then try to tune the parameters for assembly correction, contig/Hi-C link filtration, or Markov Clustering:
 
 ```
 2022-11-19 13:20:38 <HapHiC_cluster.py> [recommend_inflation] It seems that some chromosomes were grouped together (length ratio = 0.5)...
@@ -216,7 +220,9 @@ In the previous step, some contigs may have been filtered out before clustering 
 $ /path/to/HapHiC/haphic reassign asm.fa full_links.pkl mcl_inflation_x.clusters.txt paired_links.clm --nclusters nchrs
 ```
 
-**Note:**  If assembly correction has been performed, use `corrected_asm.fa` as input FASTA file instead of `asm.fa`.
+> [!NOTE]
+>
+> If assembly correction has been performed, use `corrected_asm.fa` as input FASTA file instead of `asm.fa`.
 
 **Parameters**
 
@@ -230,13 +236,15 @@ For more information, run `haphic reassign --help`.
 
 ### <span id="step3">[Step 3] Ordering and orientation</span>
 
-The ordering and orientation step in HapHiC is implemented using an integration of algorithms from [3D-DNA](https://github.com/aidenlab/3d-dna) and [ALLHiC](https://github.com/tanghaibao/allhic). First, an efficiency-improved 3D-DNA iterative scaffolding algorithm (refered to as "fast sorting") is used to quickly order and orient the contigs. Then, the ordering and orientation of contigs are input as an initial configuration and optimized with the ALLHiC program ([a modified version](http://github.com/zengxiaofei/allhic), in which the hot-start optimization has been fixed). The input file `HT_links.pkl` is the output file from the clustering step; the directory `split_clms` and the group files `final_groups/group*.txt` were created in the reassignment step. The optional parameter `--processes` is used to set the number of processes for the ordering and orientation.
+The ordering and orientation step in HapHiC is implemented using an integration of algorithms from [3D-DNA](https://github.com/aidenlab/3d-dna) and [ALLHiC](https://github.com/tanghaibao/allhic). First, an efficiency-improved 3D-DNA iterative scaffolding algorithm (refered to as "fast sorting") is used to quickly order and orient the contigs. Then, the order and orientation of contigs are input as an initial configuration and optimized with the ALLHiC program ([a modified version](http://github.com/zengxiaofei/allhic), in which the hot-start optimization has been fixed). The input file `HT_links.pkl` is the output file from the clustering step; the directory `split_clms` and the group files `final_groups/group*.txt` were created in the reassignment step. The optional parameter `--processes` is used to set the number of processes for the ordering and orientation.
 
 ```bash
 $ /path/to/HapHiC/haphic sort asm.fa HT_links.pkl split_clms final_groups/group*.txt --processes 8
 ```
 
-**Note:**  If assembly correction has been performed, use `corrected_asm.fa` as input FASTA file instead of `asm.fa`.
+> [!NOTE]
+>
+> If assembly correction has been performed, use `corrected_asm.fa` as input FASTA file instead of `asm.fa`.
 
 **Parameters**
 
@@ -248,25 +256,27 @@ For more information, run `haphic sort --help`.
 * `group*.tour`: The contig ordering and orientation result for each group after ALLHiC optimization.
 * `final_tours/group*.tour`: The final contig ordering and orientation results.
 
-### <span id="step4">[Step 4] Building pseudomolecules</span>
+### <span id="step4">[Step 4] Building scaffolds</span>
 
 The final step is to build the scaffolds (pseudomolecules) using the chromosome assignment, ordering and orientation information of contigs from the `group*.tour` files. By default, the output scaffolds are sorted by scaffold length.
 
-**If assembly correction was not performed**:
+**If assembly correction was not performed:**
 
 ```bash
 $ /path/to/HapHiC/haphic build asm.fa asm.fa HiC.filtered.bam final_tours/group*.tour
 ```
 
-**If assembly correction has been performed**, use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa`. Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
+**If assembly correction has been performed:**
+
+Use `corrected_asm.fa` as input FASTA file instead of **the first** `asm.fa`. Additionally, specify the corrected contig list `corrected_ctgs.txt` using the `--corrected_ctgs` parameter. Otherwise, the YaHS-style `scaffolds.raw.agp` generated may be incorrect.
 
 ```bash
 $ /path/to/HapHiC/haphic build corrected_asm.fa asm.fa HiC.filtered.bam final_tours/group*.tour --corrected_ctgs corrected_ctgs.txt
 ```
 
-**Note:**  
-
-* The second `asm.fa` (raw uncorrected assembly) and `HiC.filtered.bam` are required since HapHiC version 1.0.1 for generating the script for juicebox visualization and curation.
+> [!NOTE]
+>
+> The second `asm.fa` (raw uncorrected assembly) and `HiC.filtered.bam` are required since HapHiC version 1.0.1 for generating the shell script for juicebox visualization and curation.
 
 **Parameters**
 
@@ -283,7 +293,7 @@ For more information, run `haphic build --help`.
 
 ## <span id="examples">Examples</span>
 
-HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41477-024-01755-3/MediaObjects/41477_2024_1755_MOESM1_ESM.pdf) in our [paper](https://doi.org/10.1038/s41477-024-01755-3).
+HapHiC can scaffold most genomes **within 1 hour** using only 8 CPU cores. For large genomes with fragmented contigs, scaffolding typically takes less than half a day. HapHiC has been successfully validated in scaffolding genomes from various taxa, including higher plants, humans, birds, amphibians, fish, insects, mollusks, and annelids. For more examples and detailed information, please refer to the [Supplementary Information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41477-024-01755-3/MediaObjects/41477_2024_1755_MOESM1_ESM.pdf) in our [paper](https://doi.org/10.1038/s41477-024-01755-3).
 
 | Species              | Karyotype    | Haplotype-resolved | Assembly size (Gb) | Contig N50 (Mb) | Number of contigs | Hi-C depth after filtering | Wall time (min) | Peak RAM (GiB) |
 | :-------------------- | ------------ | ------------------ | ------------------ | --------------- | ----------------- | -------------------------- | --------------- | -------------- |
@@ -308,20 +318,24 @@ HapHiC can scaffold most genomes within **1 hour** using 8 CPU cores. For large 
 
 When scaffolding a phased [hifiasm](https://github.com/chhylp123/hifiasm) assembly, you can run HapHiC with the GFA file(s) output by hifiasm. Here, the term "phased hifiasm assembly" refers to the haplotype-resolved primary contigs assembled via the trio binning or Hi-C-based algorithm (`*.hap*.p_ctg.gfa`), as well as the phased unitigs (`*.p_utg.gfa`). 
 
-HapHiC uses the read depth information in the GFA file(s) to filter out potential collapsed contigs/unitigs before clustering.  If more than one GFA file is provided, HapHiC assumes these GFA files are haplotype-specific (`*.hap*.p_ctg.gfa`), and artificially removes or reduces the Hi-C links between the haplotypes according to this phasing information. Note that the contigs/unitigs in GFA file(s) should match those in FASTA file. Either `.gfa` or `noseq.gfa` is acceptable.
+HapHiC uses the read depth information in the GFA file(s) to filter out potential collapsed contigs/unitigs before clustering.  If more than one GFA file is provided, HapHiC assumes these GFA files are haplotype-specific (`*.hap*.p_ctg.gfa`), and artificially removes or reduces the Hi-C links between the haplotypes according to this phasing information during clustering. Note that the contigs/unitigs in GFA file(s) should match those in FASTA file. Either `.gfa` or `noseq.gfa` is acceptable.
 
 ```bash
-# (1) For hifiasm primary unitigs, use the GFA file to filter out potential collapsed unitigs before clustering
+# (1) For hifiasm primary unitigs (`*.p_utg.gfa`), use the read depth informtion in the GFA file to filter out potential collapsed unitigs before clustering
 $ /path/to/HapHiC/haphic pipeline p_utg.fa HiC.filtered.bam nchrs --gfa p_utg.gfa
 
-# (2) In addition to read depth filtering, HapHiC can also reduce Hi-C links between haplotypes according to phasing information in GFA files for haplotype-resolved primary contigs
+# (2) In addition to read depth filtering, HapHiC can also reduce Hi-C links between haplotypes according to phasing information in GFA files for haplotype-resolved primary contigs (`*.hap*.p_ctg.gfa`)
 
 # By default, all Hi-C links between haplotypes are completely removed and contigs from different haplotypes will not be clustered into the same group
 $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa"
 
-# The weight can be set to 0 to ignore the phasing information. You can also set it between 0 and 1 to run HapHiC as a double check. In the latter case, contigs from different haplotypes might be clustered together
+# Use the `--phasing_weight` parameter to control the confidence level of the hifiasm phasing information. The weight can be set to 0 to completely ignore the phasing information. You can also set it between 0 and 1 to run HapHiC (considering both hifiasm and HapHiC phasing results), in which case contigs from different haplotypes might be clustered together
 $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa" --phasing_weight 0
 ```
+
+> [!NOTE]
+>
+> This feature is not essential; you can decide whether to use the `--gfa` parameter based on your specific needs. First, even without a GFA file, HapHiC can still filter out collapsed contigs/unitigs based on the Hi-C sequencing depth. Second, artificially removing Hi-C links between haplotypes by using phasing information from the GFA files might lead to a certain degree of reduction in the anchoring rate.
 
 
 
@@ -336,9 +350,9 @@ You can try the quick view mode in HapHiC when:
 In quick view mode, HapHiC simply uses the fast sorting to order and orient all contigs without clustering. The result is similar to `*.0.hic` in [3D-DNA](https://github.com/aidenlab/3d-dna). Most parameters are disabled in this mode, but you can use `--correct_nrounds` to correct input contigs. When scaffolding a haplotype-resolved hifiasm assembly ( `*.hap*.p_ctg.gfa` ), you can still partition contigs into different haplotypes with the haplotype-specific GFA files.
 
 ```bash
-# HapHiC will ignore the parameter "nchrs", it can be any integer
+# HapHiC will ignore the parameter `nchrs`, it can be any integer
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --quick_view
-# Correct input contigs before a quick view
+# Correct input contigs in quick view mode
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --quick_view --correct_nrounds 2
 # Partition contigs into different haplotypes in quick view mode
 $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --quick_view --gfa "hap1.p_ctg.gfa,hap2.p_ctg.gfa"
@@ -348,7 +362,7 @@ $ /path/to/HapHiC/haphic pipeline allhaps.fa HiC.filtered.bam nchrs --quick_view
 
 ## <span id="juicebox">Juicebox curation</span>
 
-There are two ways of generating `.assembly` and `.hic` files for visualization and manual curation in Juicebox. You can choose one of them according to your preference.
+There are two ways of generating `.assembly` and `.hic` files for visualization and manual curation in Juicebox. You can choose one of them according to your preference, **though we recommend the second method**.
 
 #### (1) SALSA-style `scaffolds.agp`
 
@@ -366,7 +380,9 @@ $ /path/to/juicebox_scripts/agp2assembly.py scaffolds.agp scaffolds.assembly
 $ bash /path/to/3d-dna/visualize/run-assembly-visualizer.sh -p false scaffolds.assembly out.sorted.links.mnd
 ```
 
-**Note:** If there are any contigs corrected by HapHiC, you need to re-align Hi-C reads to `corrected_asm.fa` and re-filter them instead of using the original `HiC.filtered.bam` . Otherwise, there will not be any Hi-C signals on the corrected contigs in Juicebox. This is because that the IDs of corrected contigs in the SALSA-style `scaffolds.agp` do not match the contig IDs in the original BAM file.
+> [!NOTE]
+>
+> If there are any contigs corrected by HapHiC, you need to re-align Hi-C reads to `corrected_asm.fa` and re-filter them instead of using the original `HiC.filtered.bam`. Otherwise, there will not be any Hi-C signals on the corrected contigs in Juicebox. This is because that the IDs of corrected contigs in the SALSA-style `scaffolds.agp` do not match the contig IDs in the original BAM file. This is also the reason why the method is not recommended.
 
 You can recall these steps on the command line:
 
@@ -374,7 +390,7 @@ You can recall these steps on the command line:
 $ /path/to/HapHiC/haphic juicer
 ```
 
-After manual curation in Juicebox, you will obtain the modified assembly file `scaffolds.review.assembly` . To generate the final FASTA file for the scaffolds:
+After manual curation in Juicebox, you will obtain the modified assembly file `scaffolds.review.assembly`. To generate the final FASTA file for the scaffolds:
 
 ```bash
 # Generate the final FASTA file for the scaffolds
@@ -385,19 +401,19 @@ $ /path/to/juicebox_scripts/juicebox_assembly_converter.py -a scaffolds.review.a
 
 To avoid the necessity of re-aligning Hi-C data, we have incorporated a YaHS-style `scaffolds.raw.agp` since HapHiC version 1.0.1. In this AGP file, the broken contigs are not assigned new IDs. Instead, their starting and ending coordinates in the raw contigs are displayed in the seventh and eighth columns. By following [the approach provided by YaHS](https://github.com/c-zhou/yahs#manual-curation-with-juicebox-jbat), you can generate the `.assembly` and `.hic` files without the need for re-aligning.
 
-After constructing the final scaffolds, HapHiC automatically generates a shell script for visualization and curation in Juicebox. Ensure that [Java](https://openjdk.org/install/) and [samtools](https://github.com/samtools/samtools) have been installed and added to `$PATH` on your system. Then, run the following command:
+After constructing the final scaffolds (Step 4), HapHiC automatically generates a shell script for [visualization and curation in Juicebox](#juicebox). Ensure that [Java](https://openjdk.org/install/) and [samtools](https://github.com/samtools/samtools) have been installed and added to `$PATH` on your system. Then, run the following command:
 
 ```bash
 # bash, not sh
 $ bash juicebox.sh
 ```
 
-**Notes:** 
+> [!NOTE]
+>
+> * Since HapHiC version 1.0.6, there is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
+> * For large genomes, it is necessary to adjust the memory settings in the juicebox.sh file for Java (e.g. set to `-Xmx64G` or higher) to avoid out-of-memory errors or to improve the execution speed.
 
-* Since HapHiC verion 1.0.6, there is no longer a need to manually set the scale factor in Juicebox. In addition, the saved `.review.assembly` file can now be parsed correctly by Juicebox.
-* For large genomes, it is necessary to adjust the memory settings in the juicebox.sh file for Java (e.g. set to `-Xmx64G` or higher) to avoid out-of-memory errors or to improve the execution speed.
-
-After manual curation in Juicebox, you will obtain the modified assembly file `out_JBAT.review.assembly` . To generate the final FASTA file for the scaffolds:
+After manual curation in Juicebox, you will obtain the modified assembly file `out_JBAT.review.assembly`. To generate the final FASTA file for the scaffolds:
 
 ```bash
 # Generate the final FASTA file for the scaffolds
@@ -410,7 +426,7 @@ $ /path/to/HapHiC/utils/juicer post -o out_JBAT out_JBAT.review.assembly out_JBA
 
 ![](./images/HapHiC2.png)
 
-Since HapHiC version 1.0.2, we have introduced a `haphic plot` command to generate highly customizable Hi-C contact maps. This command requires two input files: a filtered BAM file `HiC.filtered.bam` and a scaffold AGP file containing contig IDs that match those in the BAM file:
+Since HapHiC version 1.0.2, we have introduced a `haphic plot` command to generate highly customizable Hi-C contact maps. This command requires two input files, a filtered BAM file `HiC.filtered.bam` and a scaffold AGP file containing contig IDs that match those in the BAM file:
 
 ```bash
 # For HapHiC scaffolding result
@@ -419,14 +435,16 @@ $ /path/to/HapHiC/haphic plot scaffolds.raw.agp HiC.filtered.bam
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam
 ```
 
-The visualized Hi-C contact map is output as `contact_map.pdf` . This process may be somewhat slow if the BAM file is large, taking several minutes per 10 GiB of the BAM file. Upon completion, the program will produce a binary file named `contact_matrix.pkl` . This file can be utilized in place of `HiC.filtered.bam` for faster visualization (~1 minute).
+The visualized Hi-C contact map is output as `contact_map.pdf`. This process may be somewhat slow if the BAM file is large, taking several minutes per 10 GiB of the BAM file. Upon completion, the program will produce a binary file named `contact_matrix.pkl`. This file can be utilized in place of `HiC.filtered.bam` for faster visualization (only ~1 minute), facilitating fine-tuning of heatmap-style related parameters:
 
 ```bash
 # Use previously generated `contact_matrix.pkl` for faster visualization
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp contact_matrix.pkl
 ```
 
-**Note:** The input AGP file and the parameters `--bin_size` and `--min_len` must remain consistent throughout.
+> [!NOTE]
+>
+> When using `contact_matrix.pkl` for faster visualization, the input AGP file and the parameters `--bin_size` and `--min_len` must remain consistent throughout.
 
 By default, the bin size is set to 500 Kbp and only scaffolds exceeding 1 Mbp in length will be displayed on the contact map. To modify these parameters:
 
@@ -435,7 +453,7 @@ By default, the bin size is set to 500 Kbp and only scaffolds exceeding 1 Mbp in
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --bin_size 1000 --min_len 5
 ```
 
-Additionally, you can create `separate_plots.pdf` , which illustrates the contact map for each scaffold individually:
+Additionally, you can create `separate_plots.pdf`, which illustrates the contact map for each scaffold individually:
 
 ```bash
 $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plots
@@ -448,7 +466,7 @@ To change the colormap, origin, border style, and normalization method for the c
 ```bash
 # This script generates an AGP file for your FASTA file
 $ /path/to/HapHiC/utils/mock_agp_file.py chr_asm.fa > chr_asm.agp
-# Then, you can visualize your results using haphic plot with the BAM file and the AGP file
+# Then, you can visualize your results using `haphic plot` with the BAM file and the AGP file
 ```
 
 
@@ -456,7 +474,7 @@ $ /path/to/HapHiC/utils/mock_agp_file.py chr_asm.fa > chr_asm.agp
 
 HapHiC has introduced a separate command, `haphic refsort`, in version 1.0.4 to order and orient whole scaffolds according to a reference genome.
 
-To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**) to a reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
+To begin, you should prepare a PAF file by align raw contigs (**not scaffolds**) to a chromosome-level reference genome using [minimap2](https://github.com/lh3/minimap2). The reference genome can be from the same species or a closely related one:
 
 ```bash
 # The preset can be `asm5` if the reference genome is well-assembled from the same species
@@ -465,20 +483,24 @@ $ minimap2 -x asm20 ref.fa asm.fa --secondary=no -t 28 -o asm_to_ref.paf
 $ wfmash ref.fa asm.fa -m -n 1 -S 1 -t 28 | cut -f 1-6,8- > asm_to_ref.paf
 ```
 
-By using the `haphic refsort` command, you can generate a new AGP file based on the PAF file:
+By using the `haphic refsort` command, you can generate new AGP and FASTA files based on the PAF file:
 
 ```bash
 # By default, scaffolds are output based on the alphabetical order of the chromosome IDs of the reference genome
 $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf > scaffolds.refsort.agp
 # You can specify the order by listing chromosome IDs of the reference genome separated by commas (no spaces)
 $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --ref_order "chr1,chr2,chr3,chr4,..." > scaffolds.refsort.agp
-# If you want to generate a new FASTA file (`scaffolds.refsort.fa`) as well:
+# If you want to generate a new FASTA file (default name: `scaffolds.refsort.fa`) as well
 $ haphic refsort 04.build/scaffolds.raw.agp asm_to_ref.paf --fasta asm.fa > scaffolds.refsort.agp
-# If you want to run `haphic refsort` on `out_JBAT.FINAL.agp`
+# If you want to run `haphic refsort` on manually curated `out_JBAT.FINAL.agp`
 $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 ```
 
-The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
+The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). 
+
+>  [!NOTE]
+>
+> Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
 
 Here is an example of the autotetraploid sugarcane Np-X assembly:
 
@@ -490,13 +512,13 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 * **What can I do when the anchoring rate is too low?**
 
-  There are three parameters controlling the anchoring rate through the reassignment step: `--min_RE_sites` , `--min_links`  , and `--min_link_density` . By default, these parameters are set to 25, 25, and 0.0001, respectively. However, both the contig contiguity and Hi-C sequencing depth vary across different projects. By checking the `*statistics.txt` files in `01.cluster/inflation_*` , you can find better values for these parameters to get a scaffolding result with a higher anchoring rate.
+  There are three parameters controlling the anchoring rate through the reassignment step: `--min_RE_sites`, `--min_links`, and `--min_link_density`. By default, these parameters are set to 25, 25, and 0.0001, respectively. However, both the contig contiguity and Hi-C sequencing depth vary across different projects. By checking the `*statistics.txt` files in `01.cluster/inflation_*`, you can find better values for these parameters to get a scaffolding result with a higher anchoring rate.
 
   For small genomes, the default `--Nx 80` in the clustering step and the default `--min_group_len` in reassignment step may also negatively affect the anchoring rate. To address this, you can increase the value of `--Nx` and decrease `--min_group_len`, or even disable these two functions entirely by using `--Nx 100` and `--min_group_len 0`.
 
 * **How to run HapHiC if I don't know the exact number of chromosomes?**
 
-  You could try [quick view](#quick_view). In this mode, HapHiC ignores the `nchrs` parameter (you can fill in any integer), and scaffold contigs without clustering (similar to `*.0.hic` in 3D-DNA). After visualizing the results in Juicebox, you can count the number of chromosomes based on the Hi-C contact map, and rerun HapHiC pipeline with this number. Alternatively, you can manually curate the assembly and split chromosomes in Juicebox by yourself.
+  You could try [quick view](#quick_view). In this mode, HapHiC ignores the `nchrs` parameter (you can fill in any integer), and orders and orients contigs without clustering (similar to `*.0.hic` in 3D-DNA). After visualizing the results in Juicebox, you can count the number of chromosomes based on the Hi-C contact map, and rerun HapHiC pipeline with this number. Alternatively, you can manually curate the assembly and split chromosomes in Juicebox by yourself.
 
 * **What can I do when I see "It seems that some chromosomes were grouped together" or "The maximum number of clusters is even less than the expected number of chromosomes" in the clustering step?**
 
@@ -504,7 +526,7 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
   **(1)** The `--max_inflation` parameter is too low. Try increasing it. The default value of `--max_inflation 3.0` is generally enough. However, sometimes the best inflations are even greater than 7.0 due to a higher background of Hi-C links between chromosomes (We encountered this in the [taro genome](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.13239)). This could be due to biological specificity or low quality of the Hi-C library. In rare cases, if a higher `--max_inflation` still doesn't work, try using [quick view](#quick_view) and manually splitting chromosomes in Juicebox.
 
-  **(2)** Some homologous chromosomes may be grouped together due to assembly errors. This is common in scaffolding phased assemblies. Please use more aggressive parameters to correct contigs, filter out contigs, or remove Hi-C links between homologous chromosomes. If you are unsure about the type or the proportion of assembly errors, a [quick view](#quick_view) may be helpful.
+  **(2)** Some homologous chromosomes may be grouped together due to assembly errors. This is common in scaffolding phased assemblies. Please use more aggressive parameters to correct contigs, filter out contigs, or use `--moreve_allelic_links` to remove Hi-C links between homologous chromosomes. If you are unsure about the type or the proportion of assembly errors, a [quick view](#quick_view) may be helpful.
 
   **(3)** When the chromosome lengths vary greatly, HapHiC may mistake a large chromosome for two or more chromosomes clustered together. In this case, you can choose a reasonable inflation and [run the remaining steps individually](#step_by_step).
 
@@ -514,6 +536,7 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
 * **Issues:** https://github.com/zengxiaofei/HapHiC/issues
 * **Before asking questions, please read:** [Important: More information allows me to grasp your issue faster](https://github.com/zengxiaofei/HapHiC/issues/32)
+* **We have built a [DeepSeek-Powered HapHiC Knowledge Base](https://github.com/zengxiaofei/HapHiC/issues/106) (WeChat registration is required)**
 
 
 

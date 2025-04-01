@@ -22,6 +22,7 @@ HapHiC是一款利用Hi-C数据将单倍型分型的基因组组装挂载至染�
 
 **近期更新:**
 
+* 版本 1.0.7 (2025.03.28)：HapHiC现在可支持更长的contig（2^63-1 bp）。不过一些上下游工具（比如bwa和Juicebox）可能仍不支持长度超过2^31-1 bp的contig。
 * 版本 1.0.6 (2024.08.26)：不再需要在Juicebox中设置缩放因子（scale factor）。此外，保存的`.review.assembly`文件 现在可以被Juicebox正确解析。
 * 版本 1.0.5 (2024.07.05)：通过对比快速排序和ALLHiC优化结果，改进了contig排序和定向和稳定性。
 * 版本 1.0.4 (2024.07.03)：新增`haphic refsort`命令，用于[根据参考基因组对整个scaffold进行排序与定向](#refsort)。

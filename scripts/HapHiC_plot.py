@@ -578,7 +578,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     # draw heatmap with normalization
     heatmap = normalized_imshow(ax, contact_matrix, cmap, vmax)
 
-    ax.set_title('Hi-C contact map (bin size: {} Kb, x-axis unit: Mb)'.format(args.bin_size), fontsize=7)
+    ax.set_title('{} contact map (bin size: {} Kb, x-axis unit: Mb)'.format(args.data_type, args.bin_size), fontsize=7)
 
     if args.border_style == 'grid':
         # get gridline style
@@ -698,6 +698,9 @@ def parse_arguments():
     parser.add_argument(
             '--min_len', type=int, default=1, 
             help='minimum scaffold length for visualization, default: %(default)s (Mbp)')
+    parser.add_argument(
+            '--data_type', default='Hi-C',
+            help='specify the data type to be displayed in the heatmap title (e.g., "Hi-C" or "Pore-C"), default: %(default)s')
     parser.add_argument(
             '--cmap', default='white,red', 
             help='define the colormap for the heatmap, default: %(default)s. It can be any built-in sequential colormap from Matplotlib '

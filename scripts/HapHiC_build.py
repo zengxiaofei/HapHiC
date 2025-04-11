@@ -196,7 +196,7 @@ def generate_juicebox_script(args):
         # Additionally, the `juicer pre` command in YaHS has some problems in filtering unsorted bam (although this should be possible)
         f.write('{} pre -a -q 1 -o out_JBAT {} {}.raw.agp {}.fai >out_JBAT.log 2>&1\n'.format(
             juicer, args.alignments, args.prefix, raw_fasta_basename))
-        f.write('(java -jar -Xmx32G {} pre out_JBAT.txt out_JBAT.hic.part <(cat out_JBAT.log | grep PRE_C_SIZE '.format(juicer_tools))
+        f.write('(java -Djava.awt.headless=true -jar -Xmx32G {} pre out_JBAT.txt out_JBAT.hic.part <(cat out_JBAT.log | grep PRE_C_SIZE '.format(juicer_tools))
         f.write("| awk '{print $2\" \"$3}')) && (mv out_JBAT.hic.part out_JBAT.hic)\n")
 
 

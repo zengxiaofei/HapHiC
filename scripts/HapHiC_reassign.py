@@ -746,20 +746,11 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    # check parameters
-    if not (args.links.endswith('.bam') or args.links.endswith('.pkl') or args.links.endswith('.pairs') or args.links.endswith('.pairs.gz')):
-        logger.error('The second positional argument "links" should end with .bam, .pkl, .pairs, or .pairs.gz')
-        raise RuntimeError('Parameter check failed')
-
-    if not args.clusters.endswith('.clusters.txt') and not args.clusters.endswith('.assembly'):
-        logger.error('The third positional argument "clusters" should end with .clusters.txt or .assembly')
-        raise RuntimeError('Parameter check failed')
-
     return args
 
 
 def run(args, log_file=None):
-
+    
     # (for pipeline) if log_file is provided, add an additional file handler for logging
     if log_file:
         file_handler = logging.FileHandler(log_file, 'w')
@@ -776,6 +767,15 @@ def run(args, log_file=None):
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
+    
+    # check parameters
+    if not (args.links.endswith('.bam') or args.links.endswith('.pkl') or args.links.endswith('.pairs') or args.links.endswith('.pairs.gz')):
+        logger.error('The second positional argument "links" should end with .bam, .pkl, .pairs, or .pairs.gz')
+        raise RuntimeError('Parameter check failed')
+
+    if not args.clusters.endswith('.clusters.txt') and not args.clusters.endswith('.assembly'):
+        logger.error('The third positional argument "clusters" should end with .clusters.txt or .assembly')
+        raise RuntimeError('Parameter check failed')
 
     # read draft genome in FASTA format,
     # construct a dict to store sequence and length of each contig / scaffold

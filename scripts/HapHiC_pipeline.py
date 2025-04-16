@@ -493,7 +493,7 @@ def main():
     # check steps
     steps = {int(step) for step in args.steps.split(',')}
     if steps not in ({1}, {1, 2}, {1, 2, 3}, {1, 2, 3, 4}):
-        raise Exception('Illegal steps: {}'.format(args.steps))
+        raise ValueError('Illegal steps: {}'.format(args.steps))
 
     # modify args to make them compatible across scripts
     args.fasta = abspath(args.fasta)

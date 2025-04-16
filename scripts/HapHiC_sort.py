@@ -765,7 +765,7 @@ def check_exceptions(result_list):
             logger.error(e)
 
     if nerrors:
-        raise Exception('{} exception(s) detected, please check the log above.'.format(nerrors))
+        raise RuntimeError('{} exception(s) detected, please check the log above.'.format(nerrors))
 
 
 def parse_arguments():

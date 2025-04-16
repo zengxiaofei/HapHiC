@@ -121,7 +121,7 @@ def generate_contact_matrix(group_size_dict, frag_set, group_frag_dict, bin_size
         # order the scaffolds as specified
         for group in scaffolds:
             if group not in group_size_dict:
-                raise Exception('Cannot find {} in the input AGP file'.format(group))
+                raise RuntimeError('Cannot find {} in the input AGP file'.format(group))
             size = group_size_dict[group]
             group_n_bins = size // bin_size + 1
             for n in range(group_n_bins):
@@ -256,7 +256,7 @@ def load_pickle(pickle_file, args):
                                 args.bin_size, args.min_len, args.specified_scaffolds, 
                                 old_args.bin_size, old_args.min_len, old_args.specified_scaffolds))
             logger.error(error_message)
-            raise Exception(error_message)
+            raise RuntimeError(error_message)
 
         return contact_matrix
 
@@ -306,7 +306,7 @@ def bnewt(A, tol=1e-6, x0=None, delta=0.1, Delta=3, fl=0):
         mm = 0
         if nn > max_nn:
             logger.info(error_message)
-            raise Exception(error_message)
+            raise RuntimeError(error_message)
 
         i += 1
         k = 0
@@ -319,7 +319,7 @@ def bnewt(A, tol=1e-6, x0=None, delta=0.1, Delta=3, fl=0):
             mm += 1
             if mm > max_mm:
                 logger.info(error_message)
-                raise Exception(error_message)
+                raise RuntimeError(error_message)
 
             k += 1
             if k == 1:

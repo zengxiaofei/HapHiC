@@ -2732,17 +2732,11 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    # check parameters
-    check_param('--density_lower', args.density_lower, {'X', 'x'})
-    check_param('--density_upper', args.density_upper, {'X', 'x'})
-    check_param('--read_depth_upper', args.read_depth_upper, {'X', 'x'})
-    check_param('--rank_sum_upper', args.rank_sum_upper, {'X', 'x'})
-
     return args
 
 
 def run(args, log_file=None):
-
+    
     # (for pipeline) if log_file is provided, add an additional file handler for logging
     if log_file:
         file_handler = logging.FileHandler(log_file, 'w')
@@ -2759,6 +2753,12 @@ def run(args, log_file=None):
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
+    
+    # check parameters
+    check_param('--density_lower', args.density_lower, {'X', 'x'})
+    check_param('--density_upper', args.density_upper, {'X', 'x'})
+    check_param('--read_depth_upper', args.read_depth_upper, {'X', 'x'})
+    check_param('--rank_sum_upper', args.rank_sum_upper, {'X', 'x'})
 
     # make sure Intel MKL and sparse_dot_mkl have been correctly configured
     if not INTEL_MKL:

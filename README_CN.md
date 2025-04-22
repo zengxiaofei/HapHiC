@@ -528,11 +528,11 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 
   这个问题很复杂，可能由多种因素导致。HapHiC会根据您设定的`nchrs`参数以及每组的长度分布推荐一个“最佳”的inflation参数。有几个因素可能会导致这个问题：
 
-  **（1）**`--max_inflation`参数值过低。您可以尝试提高它。`--max_inflation 3.0`的默认值通常是足够的，但当染色体之间Hi-C连接的背景噪声较高时，“最佳”inflation有可能超过7.0（我们在[芋头基因组](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.13239)中遇到过这个问题）。这可能是由于物种特异性或Hi-C文库质量较低所致。极少数情况下，如果提高`--max_inflation`仍无效，可尝试使用[快速查看模式](#quick_view)并在Juicebox中手动划分染色体。
+  **（1）** `--max_inflation`参数值过低。您可以尝试提高它。`--max_inflation 3.0`的默认值通常是足够的，但当染色体之间Hi-C连接的背景噪声较高时，“最佳”inflation有可能超过7.0（我们在[芋头基因组](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.13239)中遇到过这个问题）。这可能是由于物种特异性或Hi-C文库质量较低所致。极少数情况下，如果提高`--max_inflation`仍无效，可尝试使用[快速查看模式](#quick_view)并在Juicebox中手动划分染色体。
 
-  **（2）**某些同源染色体可能因为组装错误被聚类到一起。这在挂载单倍型分型的基因组时很常见。建议使用更严格的参数对contig进行纠错、过滤或使用`--remove_allelic_links`移除同源染色体间的Hi-C连接。若不确定组装错误的类型或比例，[快速查看模式](#quick_view)可能有助于判断。
+  **（2）** 某些同源染色体可能因为组装错误被聚类到一起。这在挂载单倍型分型的基因组时很常见。建议使用更严格的参数对contig进行纠错、过滤或使用`--remove_allelic_links`移除同源染色体间的Hi-C连接。若不确定组装错误的类型或比例，[快速查看模式](#quick_view)可能有助于判断。
 
-  **（3）**当染色体长度差异很大时，HapHiC可能将一个大染色体错误判断为多个聚在一起的染色体。此时可以选择一个合理的inflation值后[分步运行后续步骤](#step_by_step)。
+  **（3）** 当染色体长度差异很大时，HapHiC可能将一个大染色体错误判断为多个聚在一起的染色体。此时可以选择一个合理的inflation值后[分步运行后续步骤](#step_by_step)。
 
 
 

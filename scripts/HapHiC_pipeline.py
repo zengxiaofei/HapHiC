@@ -375,6 +375,7 @@ def haphic_cluster(args):
 
     # quick view
     if args.quick_view:
+        args.clusters = None
         return None
 
     # get recommended inflation

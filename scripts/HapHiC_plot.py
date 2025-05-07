@@ -492,7 +492,7 @@ def get_xticks(length, resolution, bin_size):
         xtick_list.append(x // bin_size)
         xtick_values.append(x / 1000000)
 
-    if any([True for v in xtick_values if v != int(v)]):
+    if any((True for v in xtick_values if v != int(v))):
         xticklabel_list = [str(v) for v in xtick_values]
     else:
         xticklabel_list = [str(int(v)) for v in xtick_values]
@@ -529,6 +529,7 @@ def normalized_imshow(ax, contact_matrix, cmap, vmax):
 
     return heatmap
 
+
 def get_line_style(line_style):
 
         if line_style == 'dashed':
@@ -556,7 +557,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
         ytick += group_bin_num
         group_edge_list.append(ytick - 0.5)
     ax.set_yticks(ytick_list)
-    ax.set_yticklabels(group_list, size=6)
+    ax.set_yticklabels(group_list, size=args.tick_label_size)
 
     # set xticks
     total_n_bins = contact_matrix.shape[0]
@@ -567,7 +568,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     xtick_list, xticklabel_list = get_xticks(total_len, resolution, bin_size)
 
     ax.set_xticks(xtick_list)
-    ax.set_xticklabels(xticklabel_list, size=6)
+    ax.set_xticklabels(xticklabel_list, size=args.tick_label_size)
 
     # set the origin for the plot
     set_origin(ax, total_n_bins, args.origin)
@@ -578,7 +579,7 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     # draw heatmap with normalization
     heatmap = normalized_imshow(ax, contact_matrix, cmap, vmax)
 
-    ax.set_title('{} contact map (bin size: {} Kb, x-axis unit: Mb)'.format(args.data_type, args.bin_size), fontsize=7)
+    ax.set_title('{} contact map (bin size: {} Kb, x-axis unit: Mb)'.format(args.data_type, args.bin_size), fontsize=args.title_size)
 
     if args.border_style == 'grid':
         # get gridline style
@@ -600,18 +601,22 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
             last_edge = edge
 
     cb = fig.colorbar(heatmap, shrink=0.5)
+
     if args.normalization== 'KR':
-        cb.set_label('KR normalized counts', fontsize=7)
+        cb.set_label('KR normalized counts', fontsize=args.title_size)
     elif args.normalization == 'log10':
-        cb.set_label('Log$_{10}$(counts+1)', fontsize=7)
+        cb.set_label('Log$_{10}$(counts+1)', fontsize=args.title_size)
     else:
-        cb.set_label('counts', fontsize=7)
-    cb.ax.tick_params(labelsize=6)
-    
+        cb.set_label('Counts', fontsize=args.title_size)
+
+    cb.ax.tick_params(labelsize=args.tick_label_size)
+
     if args.prefix:
-        plt.savefig('{}contact_map.pdf'.format(args.prefix))
+        out_file = '{}contact_map.{}'.format(args.prefix, args.output_format)
     else:
-        plt.savefig('contact_map.pdf')
+        out_file = 'contact_map.{}'.format(args.output_format)
+
+    plt.savefig(out_file, format=args.output_format)
     plt.close()
 
 
@@ -657,9 +662,9 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
         xtick_list, xticklabel_list = get_xticks(group_len, resolution, bin_size)
 
         ax.set_xticks(xtick_list)
-        ax.set_xticklabels(xticklabel_list, size=5)
+        ax.set_xticklabels(xticklabel_list, size=args.tick_label_size_separate_plots)
         ax.set_yticks(xtick_list)
-        ax.set_yticklabels(xticklabel_list, size=5)
+        ax.set_yticklabels(xticklabel_list, size=args.tick_label_size_separate_plots)
 
         # set the origin for each plot
         set_origin(ax, group_n_bins, args.origin)
@@ -670,14 +675,16 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
         # draw heatmap with normalization
         normalized_imshow(ax, group_matrix, cmap, vmax)
 
-        ax.set_title(group, fontsize=6)
+        ax.set_title(group, fontsize=args.title_size_separate_plots)
 
     fig.tight_layout()
-    
+
     if args.prefix:
-        plt.savefig('{}separate_plots.pdf'.format(args.prefix))
+        out_file = '{}separate_plots.{}'.format(args.prefix, args.output_format)
     else:
-        plt.savefig('separate_plots.pdf')
+        out_file = 'separate_plots.{}'.format(args.output_format)
+
+    plt.savefig(out_file, format=args.output_format)
     plt.close()
 
 
@@ -752,6 +759,21 @@ def parse_arguments():
     parser.add_argument(
             '--figure_height', type=int, default=12, 
             help='figure height, default: %(default)s (cm)')
+    parser.add_argument(
+            '--output_format', choices={'pdf', 'svg', 'tiff', 'png', 'jpeg', 'jpg'}, default='pdf',
+            help='output figure format, default: %(default)s')
+    parser.add_argument(
+            '--tick_label_size', type=int, default=6,
+            help='tick label font size, default: %(default)s')
+    parser.add_argument(
+            '--title_size', type=int, default=7,
+            help='title font size, default: %(default)s')
+    parser.add_argument(
+            '--tick_label_size_separate_plots', type=int, default=5,
+            help='tick label font size for separate plots, default: %(default)s')
+    parser.add_argument(
+            '--title_size_separate_plots', type=int, default=6,
+            help='title font size for separate plots, default: %(default)s')
     parser.add_argument(
             '--prefix', default=None,
             help='prefix for output PDF files, default: %(default)s')

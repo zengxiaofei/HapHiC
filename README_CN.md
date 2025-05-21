@@ -465,7 +465,7 @@ $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp HiC.filtered.bam --separate_plo
 
 如需调整调色盘、坐标原点、边框样式以及标准化方法，请参考上图中的案例。
 
-**这些互作热图是否令您眼前一亮？该功能同样适用于其他挂载软件结果的可视化！**您只需为染色体水平的FASTA文件准备BAM文件（[通过Hi-C数据比对和过滤]((#align-hi-c-data-to-the-assembly))），并创建对应的AGP文件：
+**这些互作热图是否令您眼前一亮？该功能同样适用于其他挂载软件结果的可视化！** 您只需为染色体水平的FASTA文件准备BAM文件（[通过Hi-C数据比对和过滤]((#align-hi-c-data-to-the-assembly))），并创建对应的AGP文件：
 
 ```bash
 # 此脚本为您的FASTA文件生成AGP文件

@@ -106,7 +106,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 
 ### <span id="pipeline">运行HapHiC挂载流程</span>
 
-**（i）单行命令。**HapHiC提供可执行整个挂载流程的单行命令`haphic pipeline`，必需参数包括： 
+**（i）单行命令。** HapHiC提供可执行整个挂载流程的单行命令`haphic pipeline`，必需参数包括： 
 
 1) `asm.fa`， FASTA格式的基因组组装结果。
 2) `HiC.filtered.bam`，前面步骤中准备的BAM文件（自1.0.3版本起也支持chromap输出的.pairs文件）。

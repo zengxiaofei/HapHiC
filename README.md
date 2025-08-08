@@ -527,7 +527,7 @@ Here is an example of the autotetraploid sugarcane Np-X assembly:
 
   **(1)** The `--max_inflation` parameter is too low. Try increasing it. The default value of `--max_inflation 3.0` is generally enough. However, sometimes the best inflations are even greater than 7.0 due to a higher background of Hi-C links between chromosomes (We encountered this in the [taro genome](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.13239)). This could be due to biological specificity or low quality of the Hi-C library. In rare cases, if a higher `--max_inflation` still doesn't work, try using [quick view](#quick_view) and manually splitting chromosomes in Juicebox.
 
-  **(2)** Some homologous chromosomes may be grouped together due to assembly errors. This is common in scaffolding phased assemblies. Please use more aggressive parameters to correct contigs, filter out contigs, or use `--moreve_allelic_links` to remove Hi-C links between homologous chromosomes. If you are unsure about the type or the proportion of assembly errors, a [quick view](#quick_view) may be helpful.
+  **(2)** Some homologous chromosomes may be grouped together due to assembly errors. This is common in scaffolding phased assemblies. Please use more aggressive parameters to correct contigs, filter out contigs, or use `--remove_allelic_links` to remove Hi-C links between homologous chromosomes. If you are unsure about the type or the proportion of assembly errors, a [quick view](#quick_view) may be helpful.
 
   **(3)** When the chromosome lengths vary greatly, HapHiC may mistake a large chromosome for two or more chromosomes clustered together. In this case, you can choose a reasonable inflation and [run the remaining steps individually](#step_by_step).
 
@@ -570,3 +570,4 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+

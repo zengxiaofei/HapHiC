@@ -79,7 +79,8 @@ $ /path/to/HapHiC/haphic check
 # （4）显示所有可用的命令和帮助信息
 $ /path/to/HapHiC/haphic -h
 ```
-
+> [!NOTE]
+> 请注意，**Bioconda版的HapHiC不是官方维护的，并且存在已知的会导致流程终止的问题**。为了确保顺利安装，请严格按照上面的方式安装HapHiC环境。
 
 
 ## <span id="quick_start">快速入门</span>
@@ -403,7 +404,7 @@ $ /path/to/juicebox_scripts/juicebox_assembly_converter.py -a scaffolds.review.a
 
 #### (2) YaHS风格的`scaffolds.raw.agp`（推荐）
 
-为避免Hi-C数据重新比对，自HapHiC 1.0.1版本起我们引入了YaHS风格的`scaffolds.raw.agp`。在该AGP文件，中打断的contig不会被分配新ID，而是在第7、8列显示其在原始contig中的起止坐标。通过YaHS提供的方法，可以直接生成`.assembly`和`.hic`文件而无需重新比对。
+为避免Hi-C数据重新比对，自HapHiC 1.0.1版本起我们引入了YaHS风格的`scaffolds.raw.agp`。在该AGP文件中，打断的contig不会被分配新ID，而是在第7、8列显示其在原始contig中的起止坐标。通过YaHS提供的方法，可以直接生成`.assembly`和`.hic`文件而无需重新比对。
 
 构建最终scaffold后（步骤4），HapHiC会自动生成用于[Juicebox可视化与人工调整](#juicebox)的shell脚本。请确保您的系统已安装[Java](https://openjdk.org/install/)和[samtools](https://github.com/samtools/samtools)并添加至`$PATH`环境变量。随后运行下面命令：
 
@@ -573,3 +574,4 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 喜欢HapHiC吗？点一个star⭐️对我们来说将是巨大的鼓励，也能帮助其他人发现这个项目。
 
 [![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+

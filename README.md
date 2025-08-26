@@ -81,7 +81,7 @@ $ /path/to/HapHiC/haphic -h
 ```
 
 > [!NOTE]
-> Please note that the Bioconda version of HapHiC is **NOT officially maintained and has known issues** that cause the pipeline to abort. To ensure a successful installation, please set up the HapHiC Conda environment strictly in accordance with the approach above.
+> Please note that **the Bioconda version of HapHiC is NOT officially maintained and has known issues that can cause the pipeline to abort**. To ensure a successful installation, please set up the HapHiC Conda environment strictly in accordance with the approach above.
 
 
 ## <span id="quick_start">Quick start</span>
@@ -572,5 +572,6 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+
 
 

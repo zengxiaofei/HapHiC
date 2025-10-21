@@ -1,7 +1,6 @@
 name: haphic
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_kmp_llvm
@@ -63,4 +62,3 @@ dependencies:
       - six==1.16.0
       - sortedcontainers==2.4.0
       - threadpoolctl==3.5.0
-prefix: /public/home/agis_zengxf/miniconda3/envs/haphic_py310

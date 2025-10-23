@@ -81,6 +81,7 @@ $ /path/to/HapHiC/haphic -h
 ```
 
 > [!NOTE]
+>
 > Please note that **the Bioconda version of HapHiC is NOT officially maintained and has known issues that can cause the pipeline to abort**. To ensure a successful installation, please set up the HapHiC Conda environment strictly in accordance with the approach above.
 
 
@@ -135,6 +136,10 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "GATC,GANTC
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --correct_nrounds 2
 ```
 
+> [!NOTE]
+>
+> Nowadays, assemblers like hifiasm rarely produces misjoins when using high-quality long reads. Therefore, this parameter is unnecessary and may even reduce assembly contiguity. Even if there are a few assembly errors, they can be manually corrected in Juicebox by breaking the misjoins.
+
 **(iv) Switch error.** If your input assembly is haplotype-phased and has a high switch error rate (often introduced by assemblers when the sequence divergence between haplotypes is very low), use `--remove_allelic_links` to remove Hi-C links between allelic contigs, thereby increasing tolerance to such errors. The value should be the ploidy of the assembly. For example:
 
 ```bash
@@ -143,6 +148,7 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --remove_allelic
 ```
 
 > [!NOTE]
+>
 > If your input assembly is haplotype-phased and the Hi-C reads are aligned using other methods like chromap, we also recommend including this parameter to mitigate the adverse effects of incorrect mapping.
 
 **(v) Performance.** Use `--threads` to set the number of threads for BAM file reading, and `--processes` to create multiple processes for contig ordering and orientation. For example:
@@ -501,7 +507,7 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 
 The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox curation](#juicebox) and for `haphic plot` [visualization](#visualization). 
 
->  [!NOTE]
+> [!NOTE]
 >
 > Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
 

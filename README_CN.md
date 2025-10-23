@@ -80,6 +80,7 @@ $ /path/to/HapHiC/haphic check
 $ /path/to/HapHiC/haphic -h
 ```
 > [!NOTE]
+>
 > 请注意，**Bioconda版的HapHiC不是官方维护的，并且存在已知的会导致流程终止的问题**。为了确保顺利安装，请严格按照上面的方式安装HapHiC环境。
 
 
@@ -134,6 +135,10 @@ $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --RE "GATC,GANTC
 # 通常两轮纠正即可
 $ /path/to/HapHiC/haphic pipeline asm.fa HiC.filtered.bam nchrs --correct_nrounds 2
 ```
+
+> [!NOTE]
+>
+> 如今，hifiasm等组装软件在使用高质量的长读序进行组装时很少产生错误连接了。因此，这个参数不是必须的，甚至可能会降低组装连续性。即使存在少量组装错误，也可以在Juicebox中打断错误连接来手动纠错。
 
 **（iv） 交换错误（switch error）。** 若输入的是单倍型分型的组装结果但存在较高的交换错误率（常因单倍型间序列差异极小由上游组装软件引入），使用`--remove_allelic_links`移除等位contig间的Hi-C信号来提高对这种错误的容忍度。参数值应为组装结果的倍性。例如：
 
@@ -385,7 +390,7 @@ $ /path/to/juicebox_scripts/agp2assembly.py scaffolds.agp scaffolds.assembly
 $ bash /path/to/3d-dna/visualize/run-assembly-visualizer.sh -p false scaffolds.assembly out.sorted.links.mnd
 ```
 
->  [!NOTE]
+> [!NOTE]
 >
 > 若存在经HapHiC纠错的contig，需将Hi-C数据重新比对至`corrected_asm.fa`并过滤，不可以直接使用原始的`HiC.filtered.bam`。否则，纠错后的contig在Juicebox中将没有任何Hi-C信号。这是因为SALSA风格的`scaffolds.agp`中纠错的contig ID与原始BAM文件不匹配。这也是不推荐该方法的原因。
 
@@ -413,7 +418,7 @@ $ /path/to/juicebox_scripts/juicebox_assembly_converter.py -a scaffolds.review.a
 $ bash juicebox.sh
 ```
 
->  [!NOTE]
+> [!NOTE]
 >
 > * 不再需要在Juicebox中设置缩放因子（scale factor）。此外，保存的`.review.assembly`文件 现在可以被Juicebox正确解析。
 > * 对于大基因组，需在juicebox.sh中调整Java内存参数（如设为`-Xmx64G`或更高）以避免内存溢出或提升运行速度。
@@ -503,7 +508,7 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 
 生成的`scaffolds.refsort.agp`文件可直接用于[Juicebox手动调整](#juicebox)和`haphic plot`(可视化)[#visualization]。
 
->  [!NOTE]
+> [!NOTE]
 >
 > 请注意，**该功能并非基于参考基因组的挂载，也不会改变您的scaffold**，它仅仅通过整体的排序和定向改变整个scaffold的呈现方式。
 

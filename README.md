@@ -447,7 +447,7 @@ $ /path/to/HapHiC/haphic plot out_JBAT.FINAL.agp contact_matrix.pkl
 
 > [!NOTE]
 >
-> When using `contact_matrix.pkl` for faster visualization, the input AGP file and the parameters `--bin_size` and `--min_len` must remain consistent throughout.
+> When using `contact_matrix.pkl` for faster visualization, the input AGP file and the parameters `--bin_size`, `--min_len`, and `--specified_scaffolds` must remain consistent throughout.
 
 By default, the bin size is set to 500 Kbp and only scaffolds exceeding 1 Mbp in length will be displayed on the contact map. To modify these parameters:
 

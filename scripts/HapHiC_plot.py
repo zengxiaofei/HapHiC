@@ -12,6 +12,7 @@ import logging
 import time
 import sys
 import gzip
+import hashlib
 
 import pysam
 from portion import closed
@@ -153,12 +154,17 @@ def parse_pairs(pairs, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_t
 
     def convert_group_bin_id(ctg, pos):
 
-        for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
-            group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
-            if pos in ctg_raw_bin_range:
-                if group_and_bin[0] not in group_list:
-                    return None
-                return group_to_total_bin_dict[group_and_bin]
+        try:
+            for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
+                group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
+                if pos in ctg_raw_bin_range:
+                    if group_and_bin[0] not in group_list:
+                        return None
+                    return group_to_total_bin_dict[group_and_bin]
+        except KeyError as e:
+            error_message = 'Cannot find alignment position: {}:{} in the input AGP file. Please check whether the input AGP and .pairs files match'.format(ctg, pos)
+            logger.error(error_message)
+            raise Exception(error_message) from e
 
     logger.info('Parsing input pairs file...')
 
@@ -200,13 +206,17 @@ def parse_bam(bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_to
 
     def convert_group_bin_id(ctg, pos):
 
-        for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
-            group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
-            if pos in ctg_raw_bin_range:
-                if group_and_bin[0] not in group_list:
-                    return None
-                return group_to_total_bin_dict[group_and_bin]
-
+        try:
+            for ctg_raw_bin_range in ctg_aln_dict[ctg][(pos-1)//bin_size]:
+                group_and_bin = ctg_dict[ctg][ctg_raw_bin_range]
+                if pos in ctg_raw_bin_range:
+                    if group_and_bin[0] not in group_list:
+                        return None
+                    return group_to_total_bin_dict[group_and_bin]
+        except KeyError as e:
+            error_message = 'Cannot find alignment position: {}:{} in the input AGP file. Please check whether the input AGP and BAM files match'.format(ctg, pos)
+            logger.error(error_message)
+            raise Exception(error_message) from e
 
     logger.info('Parsing input BAM file...')
 
@@ -235,12 +245,22 @@ def parse_bam(bam, ctg_dict, ctg_aln_dict, bin_size, contact_matrix, group_to_to
     return contact_matrix
 
 
+def get_file_md5(filename):
+
+    with open(filename, 'rb') as f:
+        file_hash = hashlib.md5()
+        file_hash.update(f.read())
+        return file_hash.hexdigest()
+
+
 def output_pickle(contact_matrix, args):
 
     logger.info('Writing raw contact matrix to a pickle file...')
 
+    agp_md5 = get_file_md5(args.agp)
+    
     with open('contact_matrix.pkl', 'wb') as fpkl:
-        pickle.dump((contact_matrix, args), fpkl)
+        pickle.dump((contact_matrix, args, agp_md5), fpkl)
 
 
 def load_pickle(pickle_file, args):
@@ -248,7 +268,14 @@ def load_pickle(pickle_file, args):
     logger.info('Reading raw contact matrix from a previously generated pickle file...')
 
     with open(pickle_file, 'rb') as fpkl:
-        contact_matrix, old_args = pickle.load(fpkl)
+        contact_matrix, old_args, agp_md5_pkl = pickle.load(fpkl)[:3]
+        # check md5
+        agp_md5_new = get_file_md5(args.agp)
+        if agp_md5_pkl != agp_md5_new:
+            error_message = 'The AGP file used to generate {} (md5: {}) is different from the input AGP file {} (md5: {})'.format(
+                    pickle_file, agp_md5_pkl, args.agp, agp_md5_new)
+            logger.error(error_message)
+            raise RuntimeError(error_message)
         # check parameters
         if old_args.bin_size != args.bin_size or old_args.min_len != args.min_len or old_args.specified_scaffolds != args.specified_scaffolds:
             error_message = ('The input parameters (--bin_size {} --min_len {} --specified_scaffolds {}) are not consistent with '
@@ -698,13 +725,17 @@ def parse_arguments():
             'alignments', help='filtered Hi-C read alignments in BAM/pairs format (slow) or previously generated `contact_matrix.pkl` (much faster)')
     parser.add_argument(
             '--bin_size', type=int, default=500, 
-            help='bin size for generating contact matrix, default: %(default)s (kbp)')
+            help='bin size for generating contact matrix, default: %(default)s (kbp). Please note that changing this parameter will break compatibility with '
+            'the previously generated `contact_matrix.pkl`, necessitating a re-analysis from the original BAM file')
     parser.add_argument(
             '--specified_scaffolds', default=None,
-            help='specify scaffolds to visualize, separated with commas, default: %(default)s. When this parameter is set, the `--min_len` parameter will be disabled')
+            help='specify scaffolds to visualize, separated with commas, default: %(default)s. When this parameter is set, the `--min_len` parameter will be '
+            'disabled. Please note that changing this parameter will break compatibility with the previously generated `contact_matrix.pkl`, necessitating a '
+            're-analysis from the original BAM file')
     parser.add_argument(
             '--min_len', type=int, default=1, 
-            help='minimum scaffold length for visualization, default: %(default)s (Mbp)')
+            help='minimum scaffold length for visualization, default: %(default)s (Mbp). Please note that changing this parameter will break compatibility with '
+            'the previously generated `contact_matrix.pkl`, necessitating a re-analysis from the original BAM file')
     parser.add_argument(
             '--data_type', default='Hi-C',
             help='specify the data type to be displayed in the heatmap title (e.g., "Hi-C" or "Pore-C"), default: %(default)s')

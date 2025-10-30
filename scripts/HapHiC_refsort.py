@@ -361,9 +361,9 @@ def parse_arguments():
                  'or alignment issues. Use this flag to bypass the check')
     parser.add_argument(
             '--keep_original_ids', default=False, action='store_true',
-            help='keep original sequence IDs in output files without appending reference information, default: %(default)s. By default, sequence IDs are '
-                 'formatted as "original_id:ref_chrom:orientation" (e.g., group1:chr1:+, group4:chr2:-) to indicate mapping relationships. When this flag is set, '
-                 'original IDs (e.g., group1, group4) are preserved instead')
+            help='keep original scaffold IDs in output files without appending reference information, default: %(default)s. By default, scaffold IDs are '
+                 'formatted as "original_id:ref_chrom:orientation" (e.g., group1:chr1:+, group4:chr2:-) to indicate the relationships between the original scaffold '
+                 'IDs and the reference chromosomes. When this flag is set, original IDs (e.g., group1, group4) are preserved instead')
     parser.add_argument(
             '--fasta', default=None,
             help='raw (uncorrected) draft genome in FASTA format. When provided, the program will output sorted scaffolds in FASTA format')

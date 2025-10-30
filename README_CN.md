@@ -510,7 +510,8 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 
 > [!NOTE]
 >
-> 请注意，**该功能并非基于参考基因组的挂载，也不会改变您的scaffold**，它仅仅通过整体的排序和定向改变整个scaffold的呈现方式。
+> * 请注意，**该功能并非基于参考基因组的挂载，也不会改变您的scaffold**，它仅仅通过整体的排序和定向改变整个scaffold的呈现方式。
+> * 从HapHiC版本1.0.7（2025.10.23）开始，输出AGP和FASTA文件中的refsorted scaffold IDs被重命名和格式化为“original_id:ref_chrom:orientation”（例如，“group4:chr2:-”）来指出原始scaffold ID与参考染色体之间的关系。您也可以添加参数`--keep_original_ids`来保留原始scaffold IDs。
 
 下面是同源四倍体甘蔗Np-X基因组的例子：
 

@@ -509,7 +509,8 @@ The generated `scaffolds.refsort.agp` file can be directly used for [Juicebox cu
 
 > [!NOTE]
 >
-> Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
+> * Please note that **this function is NOT reference-based scaffolding and will NOT alter your scaffolds**, it only changes the way of presentation through overall ordering and orientation of the entire scaffolds. 
+> * From HapHiC version 1.0.7 (2025.10.23), the refsorted scaffold IDs in the output AGP and FASTA files are renamed and formatted as "original_id:ref_chrom:orientation" (e.g., "group4:chr2:-") to indicate the relationships between the original scaffold IDs and the reference chromosomes. You can also add the parameter `--keep_original_ids` to keep the original scaffold IDs.
 
 Here is an example of the autotetraploid sugarcane Np-X assembly:
 

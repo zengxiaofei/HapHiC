@@ -105,6 +105,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 > * Here, `asm.fa` can be haplotype-collapsed contigs (e.g., `p_ctg` in hifiasm), haplotype-phased unitigs (e.g., `p_utg` in hifiasm), or one or more sets of haplotype-resolved contigs (e.g., `hap*.p_ctg` in hifiasm). In addition, `asm.fa` may also be scaffolds output by other scaffolders.
 > * You can prepare the BAM file according to your own preferences or requirements, but **DO NOT** sort it by coordinate. If your BAM file is already sorted by coordinate, you need to resort it by read name (`samtools sort -n`).
 > * We **DO NOT** recommend the Juicer pipeline for Hi-C reads alignment, particularly in haplotype-phased assemblies.
+> * samblaster is used to mark PCR duplicates, and it can be downloaded [here](https://github.com/GregoryFaust/samblaster/releases/download/v.0.1.26/samblaster-v.0.1.26.tar.gz).
 
 ### <span id="pipeline">Run HapHiC scaffolding pipeline</span>
 
@@ -579,6 +580,7 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+
 
 
 

@@ -105,6 +105,7 @@ $ /path/to/HapHiC/utils/filter_bam HiC.bam 1 --nm 3 --threads 14 | samtools view
 > * 此处`asm.fa`可以是单倍型塌缩的contig（如hifiasm中的`p_ctg`）、单倍型分型的unitig（如hifiasm中的`p_utg`），或一套/多套单倍型分型的contig（如hifiasm中的`hap*.p_ctg`）。此外，`asm.fa`也可能可以是其他挂载工具输出的scaffold。
 > * 您可以根据自己的偏好或需求准备BAM文件，但**请勿**按坐标排序。若BAM文件已经按坐标排序，可以按照读序名称重新排序（使用`samtools sort -n`）。
 > * 我们**不建议**使用Juicer流程进行Hi-C数据比对，尤其是在单倍型分型的组装中。
+> * samblaster用于标记PCR重复，它可以在[此处](https://github.com/GregoryFaust/samblaster/releases/download/v.0.1.26/samblaster-v.0.1.26.tar.gz)下载。
 
 ### <span id="pipeline">运行HapHiC挂载流程</span>
 
@@ -580,4 +581,5 @@ $ haphic refsort out_JBAT.FINAL.agp asm_to_ref.paf > scaffolds.refsort.agp
 喜欢HapHiC吗？点一个star⭐️对我们来说将是巨大的鼓励，也能帮助其他人发现这个项目。
 
 [![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+
 

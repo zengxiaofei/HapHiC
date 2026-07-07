@@ -579,7 +579,13 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zengxiaofei/HapHiC&type=Date)](https://star-history.com/#zengxiaofei/HapHiC&Date)
+<a href="https://www.star-history.com/?type=date&repos=zengxiaofei%2FHapHiC">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&theme=dark&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
+ </picture>
+</a>
 
 
 

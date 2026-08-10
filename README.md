@@ -579,11 +579,11 @@ To reproduce the results in our paper, please use the HapHiC code in commit [431
 
 Love HapHiC? A star ⭐️ would be a huge encouragement for us and help others discover the project.
 
-<a href="https://www.star-history.com/?type=date&repos=zengxiaofei%2FHapHiC">
+<a href="https://www.star-history.com/?repos=zengxiaofei%2FHapHiC&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&theme=dark&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=f47weBQvO677o3NJoECgvThlvxe_nzAzlTRObeSm-nBlNSFWoqkEsml55vjmTiVjdD9M9uGWERoI-XlZ2Ev-El6BSh6diYVNBvmRc8iXQB4a-ysHqzWt_X5cUpmp24yxKBDiDldPW0tlRFE0OsATsiqlyMVTLcZt11LJemvDB5EkA9FC2sGMd25k2n50" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&theme=dark&legend=top-left&sealed_token=Q7UNQtin9WprudhBrtZ3klpFsqE8HtG5JGwaZm-mLXPvOGjF6hQmd4qQNgrbfcPlDIpcD8HL75Jwpj1TiocBRhKUnejXPIXy5ATrxsoeOcdeMTDuThoyg8rm2yjYL2kB86b-xuuzJXFkEhwwvfUGPjLDjC8NGTOYe6oNaA8jrP2pI1yddauGTCxVCg_m" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=Q7UNQtin9WprudhBrtZ3klpFsqE8HtG5JGwaZm-mLXPvOGjF6hQmd4qQNgrbfcPlDIpcD8HL75Jwpj1TiocBRhKUnejXPIXy5ATrxsoeOcdeMTDuThoyg8rm2yjYL2kB86b-xuuzJXFkEhwwvfUGPjLDjC8NGTOYe6oNaA8jrP2pI1yddauGTCxVCg_m" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=zengxiaofei/HapHiC&type=date&legend=top-left&sealed_token=Q7UNQtin9WprudhBrtZ3klpFsqE8HtG5JGwaZm-mLXPvOGjF6hQmd4qQNgrbfcPlDIpcD8HL75Jwpj1TiocBRhKUnejXPIXy5ATrxsoeOcdeMTDuThoyg8rm2yjYL2kB86b-xuuzJXFkEhwwvfUGPjLDjC8NGTOYe6oNaA8jrP2pI1yddauGTCxVCg_m" />
  </picture>
 </a>
 

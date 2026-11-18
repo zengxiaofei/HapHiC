@@ -24,6 +24,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.patches import Rectangle
 
 from _version import __version__, __update_time__
 
@@ -527,6 +528,26 @@ def get_xticks(length, resolution, bin_size):
     return xtick_list, xticklabel_list
 
 
+def set_ticks(ax, axis, tick_style, tick_style_dict, label_size):
+
+    if tick_style == 'none':
+        tick_list, ticklabel_list = list(), list()
+    else:
+        assert tick_style in tick_style_dict
+        tick_list, ticklabel_list = tick_style_dict[tick_style]
+
+    # rotate names on the x-axis to avoid overlaps
+    rotation = 90 if axis == 'x' and tick_style in ('scaffold_name', 'scaffold_group_name') else 0
+
+    if axis == 'x':
+        ax.set_xticks(tick_list)
+        ax.set_xticklabels(ticklabel_list, size=label_size, rotation=rotation)
+    else:
+        assert axis == 'y'
+        ax.set_yticks(tick_list)
+        ax.set_yticklabels(ticklabel_list, size=label_size, rotation=rotation)
+
+
 def set_origin(ax, n_bins, origin):
 
     if origin == 'bottom_left':
@@ -557,45 +578,139 @@ def normalized_imshow(ax, contact_matrix, cmap, vmax):
     return heatmap
 
 
-def get_line_style(line_style):
+def get_line_style(line_style, dash):
 
-        if line_style == 'dashed':
-            return (0, (10, 20))
+    if line_style == 'dashed':
+        return (0, dash)
+    else:
+        return 'solid'
+
+
+def parse_highlight_scaffold_groups(highlight_scaffold_groups, group_list, group_size_dict):
+
+    if highlight_scaffold_groups is None:
+        return list()
+
+    logger.info('Parsing scaffold groups to highlight...')
+
+    group_index_dict = {group: n for n, group in enumerate(group_list)}
+    highlighted_scaffold_set = set()
+    highlight_group_list = list()
+
+    for scaffold_group in highlight_scaffold_groups.split(';'):
+
+        if ':' in scaffold_group:
+            scaffold_group_name, scaffold_group = scaffold_group.split(':', 1)
+            scaffold_group_name = scaffold_group_name.strip()
+            if not scaffold_group_name:
+                error_message = 'Empty scaffold group name found in --highlight_scaffold_groups: {}'.format(highlight_scaffold_groups)
+                logger.error(error_message)
+                raise RuntimeError(error_message)
         else:
-            return 'solid'
+            scaffold_group_name = None
+
+        scaffolds = [scaffold.strip() for scaffold in scaffold_group.split(',')]
+
+        if any(not scaffold for scaffold in scaffolds):
+            error_message = 'Empty scaffold name found in --highlight_scaffold_groups: {}'.format(highlight_scaffold_groups)
+            logger.error(error_message)
+            raise RuntimeError(error_message)
+
+        index_list = list()
+        for scaffold in scaffolds:
+
+            if scaffold in highlighted_scaffold_set:
+                error_message = 'Scaffold {} is specified more than once in --highlight_scaffold_groups'.format(scaffold)
+                logger.error(error_message)
+                raise RuntimeError(error_message)
+            highlighted_scaffold_set.add(scaffold)
+
+            if scaffold not in group_size_dict:
+                error_message = 'Scaffold {} in --highlight_scaffold_groups is not found in the input AGP file'.format(scaffold)
+                logger.error(error_message)
+                raise RuntimeError(error_message)
+
+            if scaffold not in group_index_dict:
+                error_message = ('Scaffold {} in --highlight_scaffold_groups is not included in the heatmap, '
+                                 'possibly filtered out by --min_len or --specified_scaffolds').format(scaffold)
+                logger.error(error_message)
+                raise RuntimeError(error_message)
+
+            index_list.append(group_index_dict[scaffold])
+
+        index_list.sort()
+        if index_list[-1] - index_list[0] + 1 != len(index_list):
+            error_message = ('Scaffolds in the same group of --highlight_scaffold_groups must be adjacent in the heatmap, '
+                             'but {} are not').format(','.join(scaffolds))
+            logger.error(error_message)
+            raise RuntimeError(error_message)
+
+        highlight_group_list.append((index_list[0], index_list[-1], scaffold_group_name))
+
+    n_named = sum((True for _, _, scaffold_group_name in highlight_group_list if scaffold_group_name is not None))
+
+    if 0 < n_named < len(highlight_group_list):
+        error_message = ('Scaffold group names must be provided for all groups in --highlight_scaffold_groups, or none of them '
+                         '(e.g., "chr1:chr1_1,chr1_2;chr2:chr2_1,chr2_2")')
+        logger.error(error_message)
+        raise RuntimeError(error_message)
+
+    return highlight_group_list
 
 
-def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, args):
+def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, args, highlight_group_list):
 
     logger.info('Drawing heatmap...')
 
     plt.rcParams['pdf.fonttype'] = 42
+    # use fixed dash patterns without scaling them by the linewidth
+    plt.rcParams['lines.scale_dashes'] = False
     # convert inch to cm
     fig, ax = plt.subplots(figsize=(args.figure_width/2.54, args.figure_height/2.54), dpi=1000)
-    plt.subplots_adjust(bottom=0.05, left=0.15, right=1, top=0.95)
+    # leave more space at the bottom for rotated names on the x-axis
+    bottom = 0.15 if args.xtick_style in ('scaffold_name', 'scaffold_group_name') else 0.05
+    plt.subplots_adjust(bottom=bottom, left=0.15, right=1, top=0.95)
 
-    # set yticks
+    # calculate the center of each scaffold for the y-axis
     ytick = 0
-    ytick_list = list()
+    group_tick_list = list()
     group_edge_list = list()
+    group_start_bin_dict = dict()
     for group in group_list:
         group_bin_num = ceil(group_size_dict[group]/bin_size)
-        ytick_list.append(ytick + group_bin_num / 2)
+        group_start_bin_dict[group] = ytick
+        group_tick_list.append(ytick + group_bin_num / 2)
         ytick += group_bin_num
         group_edge_list.append(ytick - 0.5)
-    ax.set_yticks(ytick_list)
-    ax.set_yticklabels(group_list, size=args.tick_label_size)
 
-    # set xticks
+    # convert the highlighted scaffold groups to bin ranges and calculate their centers
+    scaffold_group_bin_list = list()
+    scaffold_group_tick_list = list()
+    scaffold_group_ticklabel_list = list()
+    for first_index, last_index, scaffold_group_name in highlight_group_list:
+        last_group = group_list[last_index]
+        start_bin = group_start_bin_dict[group_list[first_index]]
+        end_bin = group_start_bin_dict[last_group] + ceil(group_size_dict[last_group]/bin_size)
+        scaffold_group_bin_list.append((first_index, last_index, start_bin, end_bin))
+        scaffold_group_tick_list.append((start_bin + end_bin) / 2)
+        scaffold_group_ticklabel_list.append(scaffold_group_name)
+
+    # calculate ticks based on the total genome length
     total_n_bins = contact_matrix.shape[0]
     total_len = total_n_bins * bin_size
 
     resolution = get_resolution(total_len, 10)
 
-    xtick_list, xticklabel_list = get_xticks(total_len, resolution, bin_size)
+    length_tick_list, length_ticklabel_list = get_xticks(total_len, resolution, bin_size)
 
-    ax.set_xticks(xtick_list)
-    ax.set_xticklabels(xticklabel_list, size=args.tick_label_size)
+    tick_style_dict = {
+            'length': (length_tick_list, length_ticklabel_list),
+            'scaffold_name': (group_tick_list, group_list),
+            'scaffold_group_name': (scaffold_group_tick_list, scaffold_group_ticklabel_list)}
+
+    # set xticks and yticks
+    set_ticks(ax, 'x', args.xtick_style, tick_style_dict, args.tick_label_size)
+    set_ticks(ax, 'y', args.ytick_style, tick_style_dict, args.tick_label_size)
 
     # set the origin for the plot
     set_origin(ax, total_n_bins, args.origin)
@@ -606,18 +721,32 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
     # draw heatmap with normalization
     heatmap = normalized_imshow(ax, contact_matrix, cmap, vmax)
 
-    ax.set_title('{} contact map (bin size: {} Kb, x-axis unit: Mb)'.format(args.data_type, args.bin_size), fontsize=args.title_size)
+    # set the title with the unit of the axes in Mb
+    length_axis_list = list()
+    if args.xtick_style == 'length':
+        length_axis_list.append('x')
+    if args.ytick_style == 'length':
+        length_axis_list.append('y')
+
+    if not length_axis_list:
+        axis_unit_str = ''
+    elif len(length_axis_list) == 1:
+        axis_unit_str = ', {}-axis unit: Mb'.format(length_axis_list[0])
+    else:
+        axis_unit_str = ', x- and y-axis unit: Mb'
+
+    ax.set_title('{} contact map (bin size: {} Kb{})'.format(args.data_type, args.bin_size, axis_unit_str), fontsize=args.title_size)
 
     if args.border_style == 'grid':
         # get gridline style
-        gridline_style = get_line_style(args.gridline_style)
+        gridline_style = get_line_style(args.gridline_style, args.gridline_dash)
         # add gridlines
         for edge in group_edge_list[:-1]:
             ax.vlines(edge, 0, total_n_bins, color=args.gridline_color, linestyle=gridline_style, linewidth=args.gridline_width)
             ax.hlines(edge, 0, total_n_bins, color=args.gridline_color, linestyle=gridline_style, linewidth=args.gridline_width)
     else:
         # get outline style
-        outline_style = get_line_style(args.outline_style)
+        outline_style = get_line_style(args.outline_style, args.gridline_dash)
         # add outlines
         last_edge = 0
         for edge in group_edge_list:
@@ -626,6 +755,25 @@ def draw_heatmap(contact_matrix, group_list, group_size_dict, bin_size, vmax, ar
             ax.vlines(last_edge, last_edge, edge, color=args.outline_color, linestyle=outline_style, linewidth=args.outline_width)
             ax.hlines(last_edge, last_edge, edge, color=args.outline_color, linestyle=outline_style, linewidth=args.outline_width)
             last_edge = edge
+
+    # highlight the scaffold groups on the top layer
+    highlight_style = get_line_style(args.highlight_style, args.highlight_dash)
+    highlight_gridline_style = get_line_style(args.highlight_gridline_style, args.highlight_gridline_dash)
+    for first_index, last_index, start_bin, end_bin in scaffold_group_bin_list:
+        start_edge = start_bin - 0.5
+        end_edge = end_bin - 0.5
+
+        # add gridlines between scaffolds inside the group
+        for group_index in range(first_index, last_index):
+            ax.vlines(group_edge_list[group_index], start_edge, end_edge, color=args.highlight_gridline_color,
+                      linestyle=highlight_gridline_style, linewidth=args.highlight_gridline_width, zorder=10)
+            ax.hlines(group_edge_list[group_index], start_edge, end_edge, color=args.highlight_gridline_color,
+                      linestyle=highlight_gridline_style, linewidth=args.highlight_gridline_width, zorder=10)
+
+        # add the frame around the group
+        ax.add_patch(Rectangle((start_edge, start_edge), end_bin - start_bin, end_bin - start_bin,
+                               fill=False, edgecolor=args.highlight_color, linestyle=highlight_style,
+                               linewidth=args.highlight_width, zorder=10, clip_on=False))
 
     cb = fig.colorbar(heatmap, shrink=0.5)
 
@@ -715,6 +863,18 @@ def draw_separate_heatmaps(contact_matrix, group_list, group_size_dict, bin_size
     plt.close()
 
 
+def parse_dash(dash):
+
+    values = dash.split(',')
+    if len(values) != 2:
+        raise argparse.ArgumentTypeError('the dash pattern must be in the format "on,off", e.g., "2,4"')
+
+    try:
+        return tuple(float(value) for value in values)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError('the dash pattern must be in the format "on,off", e.g., "2,4"') from e
+
+
 def parse_arguments():
 
     parser = argparse.ArgumentParser(prog='haphic plot')
@@ -761,6 +921,39 @@ def parse_arguments():
             '--ncols', type=int, default=5, 
             help='number of scaffolds per row in `separate_plots.pdf`, default: %(default)s')
     parser.add_argument(
+            '--highlight_scaffold_groups', default=None,
+            help='highlight groups of adjacent scaffolds with frames in the heatmap, default: %(default)s. Scaffolds in the same group '
+            'are separated with commas, and groups are separated with semicolons, e.g., "chr1_1,chr1_2;chr2_1,chr2_2". A scaffold group '
+            'name can be optionally specified with a colon, e.g., "chr1:chr1_1,chr1_2;chr2:chr2_1,chr2_2", and if a name is provided '
+            'for one group, names must be provided for all groups. All input scaffolds must be included in the heatmap (i.e., present '
+            'in the input AGP file and not filtered out by --min_len or --specified_scaffolds), and scaffolds in the same group must be '
+            'adjacent in the heatmap')
+    parser.add_argument(
+            '--highlight_color', default='black', 
+            help='color for the frames of highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_style', choices=('solid', 'dashed'), default='solid', 
+            help='style for the frames of highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_width', type=float, default=1, 
+            help='width for the frames of highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_dash', type=parse_dash, default='2,2',
+            help='dash pattern for the dashed frames of highlighted scaffold groups in the format "on,off" (unit: points), default: %(default)s')
+    parser.add_argument(
+            '--highlight_gridline_color', default='black', 
+            help='color for the gridlines between scaffolds inside highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_gridline_style', choices=('solid', 'dashed'), default='solid', 
+            help='style for the gridlines between scaffolds inside highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_gridline_width', type=float, default=0.5, 
+            help='width for the gridlines between scaffolds inside highlighted scaffold groups, default: %(default)s')
+    parser.add_argument(
+            '--highlight_gridline_dash', type=parse_dash, default='2,2',
+            help='dash pattern for the dashed gridlines between scaffolds inside highlighted scaffold groups in the format "on,off" (unit: points), '
+            'default: %(default)s')
+    parser.add_argument(
             '--origin', choices=('bottom_left', 'top_left', 'bottom_right', 'top_right'), default='bottom_left', 
             help='set the origin of each heatmap, default: %(default)s')
     parser.add_argument(
@@ -775,6 +968,9 @@ def parse_arguments():
     parser.add_argument(
             '--gridline_width', type=float, default=0.2, 
             help='width for gridlines, default: %(default)s')
+    parser.add_argument(
+            '--gridline_dash', type=parse_dash, default='2,2',
+            help='dash pattern for dashed gridlines and outlines in the format "on,off" (unit: points), default: %(default)s')
     parser.add_argument(
             '--outline_color', default='blue', 
             help='color for outlines, default: %(default)s')
@@ -791,8 +987,16 @@ def parse_arguments():
             '--figure_height', type=int, default=12, 
             help='figure height, default: %(default)s (cm)')
     parser.add_argument(
-            '--output_format', choices={'pdf', 'svg', 'tiff', 'png', 'jpeg', 'jpg'}, default='pdf',
+            '--output_format', choices=('pdf', 'svg', 'tiff', 'png', 'jpeg', 'jpg'), default='pdf',
             help='output figure format, default: %(default)s')
+    parser.add_argument(
+            '--xtick_style', choices=('none', 'length', 'scaffold_name', 'scaffold_group_name'), default='length',
+            help='style for x-axis ticks (none: no ticks and tick labels; length: genome length in Mb; scaffold_name: scaffold names; '
+            'scaffold_group_name: scaffold group names specified by --highlight_scaffold_groups), default: %(default)s')
+    parser.add_argument(
+            '--ytick_style', choices=('none', 'length', 'scaffold_name', 'scaffold_group_name'), default='scaffold_name',
+            help='style for y-axis ticks (none: no ticks and tick labels; length: genome length in Mb; scaffold_name: scaffold names; '
+            'scaffold_group_name: scaffold group names specified by --highlight_scaffold_groups), default: %(default)s')
     parser.add_argument(
             '--tick_label_size', type=int, default=6,
             help='tick label font size, default: %(default)s')
@@ -841,6 +1045,16 @@ def main():
     contact_matrix, group_to_total_bin_dict, group_list, ctg_set = generate_contact_matrix(
             group_size_dict, frag_set, group_frag_dict, bin_size, args.min_len, args.specified_scaffolds)
 
+    highlight_group_list = parse_highlight_scaffold_groups(
+            args.highlight_scaffold_groups, group_list, group_size_dict)
+
+    if 'scaffold_group_name' in (args.xtick_style, args.ytick_style):
+        if not highlight_group_list or any(scaffold_group_name is None for _, _, scaffold_group_name in highlight_group_list):
+            error_message = ('Scaffold group names must be provided in --highlight_scaffold_groups (e.g., "chr1:chr1_1,chr1_2") '
+                             'when --xtick_style or --ytick_style is set to "scaffold_group_name"')
+            logger.error(error_message)
+            raise RuntimeError(error_message)
+
     if args.alignments.endswith('.pkl'):
         contact_matrix = load_pickle(args.alignments, args)
     else:
@@ -858,7 +1072,7 @@ def main():
 
     normalized_contact_matrix, vmax = normalize_matrix(contact_matrix, group_list, group_size_dict, bin_size, args.normalization, args.vmax_coef, args.manual_vmax)
 
-    draw_heatmap(normalized_contact_matrix, group_list, group_size_dict, bin_size, vmax, args)
+    draw_heatmap(normalized_contact_matrix, group_list, group_size_dict, bin_size, vmax, args, highlight_group_list)
 
     if args.separate_plots:
         draw_separate_heatmaps(normalized_contact_matrix, group_list, group_size_dict, bin_size, vmax, args)
